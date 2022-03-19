@@ -1,2 +1,8 @@
+from data_preprocessor import DataPreprocessor
+
 if __name__ == "__main__":
-    pass
+    preprocessor = DataPreprocessor()
+    # preprocessor.create_data_set_csv()
+    preprocessor.load_data()
+    # preprocessor.plot_data()
+    preprocessor.create_spectrograms()
