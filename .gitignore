@@ -132,3 +132,5 @@ dmypy.json
 # Photos
 *.jpg
 *.png
+/music_genre_recognition/fma_metadata/
+/music_genre_recognition/fma_small/
