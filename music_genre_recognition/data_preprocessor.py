@@ -97,15 +97,15 @@ class DataPreprocessor:
         """
         # show genre count plot
         print(self.data["genre_top"].value_counts())
+
         self.data["genre_top"].value_counts().plot(
             kind="pie", autopct="%1.1f%%", shadow=True
         )
-        # Put x axis on top
-        plt.xticks(rotation=90)
+
         # save plot
         plt.show()
 
-    def create_spectograms(self) -> None:
+    def create_spectrograms(self) -> None:
         """
         Creates spectograms for each track in the data set.
         :return:
@@ -119,9 +119,9 @@ class DataPreprocessor:
                 # If the file is a wav file
                 if file.endswith(".mp3"):
                     # Create spectogram
-                    self.__create_spectogram(os.path.join(root, file))
+                    self.__create_spectrogram(os.path.join(root, file))
 
-    def __create_spectogram(self, file_path: str) -> None:
+    def __create_spectrogram(self, file_path: str) -> None:
         """
         Creates a spectogram for the given file.
         :param file_path: Path to the file

@@ -5,4 +5,4 @@ if __name__ == "__main__":
     # preprocessor.create_data_set_csv()
     preprocessor.load_data()
     # preprocessor.plot_data()
-    preprocessor.create_spectograms()
+    preprocessor.create_spectrograms()
