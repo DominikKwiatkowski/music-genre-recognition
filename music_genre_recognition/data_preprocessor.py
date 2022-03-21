@@ -6,6 +6,9 @@ import ast
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
+import torch
+import random
+from torchaudio import transforms
 
 
 class DataPreprocessor:
@@ -128,11 +131,75 @@ class DataPreprocessor:
         :return:
         """
         # Load file
-        samples, sample_rate = librosa.load(file_path, sr=None)
+        signal, sample_rate = librosa.load(file_path, sr=44100)
+        if signal.shape[0] == 1:
+            # duplicate first channel
+            torch.cat([signal, signal])
+
+        # create spectogram
         plt.figure(figsize=(14, 5))
-        sgram = librosa.stft(samples)
+        sgram = librosa.stft(signal)
         sgram_mag, _ = librosa.magphase(sgram)
         mel_scale_sgram = librosa.feature.melspectrogram(S=sgram_mag, sr=sample_rate)
         mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.min)
         librosa.display.specshow(mel_sgram, sr=sample_rate, x_axis="time", y_axis="mel")
-        plt.savefig(file_path.replace(".mp3", ".png"))
+        plt.show()
+
+        # create augmented spectogram
+        spectrogram = self.spectro_augment(mel_sgram)
+        librosa.display.specshow(
+            spectrogram, sr=sample_rate, x_axis="time", y_axis="mel"
+        )
+        plt.show()
+
+    @staticmethod
+    def change_length(signal: np.ndarray, sample_rate: int, max_ms: int) -> np.ndarray:
+        sig_len = signal.size
+        max_len = sample_rate // 1000 * max_ms
+
+        if sig_len > max_len:
+            # Truncate the signal to the given length
+            signal = signal[:max_len]
+
+        elif sig_len < max_len:
+            # Length of padding to add at the beginning and end of the signal
+            pad_begin_len = random.randint(0, max_len - sig_len)
+            pad_end_len = max_len - sig_len - pad_begin_len
+
+            # Pad with 0s
+            numpy_begin = np.zeros(pad_begin_len)
+            numpy_end = np.zeros(pad_end_len)
+            signal = np.concatenate((numpy_begin, signal, numpy_end))
+
+        return signal
+
+    @staticmethod
+    def time_shift(signal: np.ndarray, shift_limit: float = 0.1) -> np.ndarray:
+        sig_len = signal.size
+        shift_amt = int(random.random() * shift_limit * sig_len)
+        return np.roll(signal, shift_amt)
+
+    @staticmethod
+    def spectro_augment(
+        signal: np.ndarray,
+        max_mask_pct: float = 0.1,
+        n_freq_masks: int = 1,
+        n_time_masks: int = 1,
+    ) -> np.ndarray:
+        n_mels, n_steps = signal.shape
+        mask_value = signal.mean()
+        aug_signal = signal
+
+        freq_mask_param = max_mask_pct * n_mels
+        for _ in range(n_freq_masks):
+            f_idx = np.random.randint(0, n_mels)
+            f_width = np.random.randint(1, int(freq_mask_param))
+            aug_signal[f_idx : f_idx + f_width, :] = mask_value
+
+        time_mask_param = max_mask_pct * n_steps
+        for _ in range(n_time_masks):
+            t_idx = np.random.randint(0, n_steps)
+            t_width = np.random.randint(1, int(time_mask_param))
+            aug_signal[:, t_idx : t_idx + t_width] = mask_value
+
+        return aug_signal
