@@ -13,6 +13,10 @@ if __name__ == "__main__":
 
     # Plot metadata distribution
     processor.plot_metadata_distribution(metadata)
+    train_metadata, val_metadata, test_metadata = processor.split_metadata_uniform(metadata)
+    processor.plot_metadata_distribution(train_metadata)
+    processor.plot_metadata_distribution(val_metadata)
+    processor.plot_metadata_distribution(test_metadata)
 
     # Generate random spectrogram
     spectrogram = spectrogram_generator.generate_spectrogram_by_index(data_paths.datasetPath, metadata, 10)
