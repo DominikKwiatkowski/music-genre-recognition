@@ -64,7 +64,9 @@ def generate_spectrogram(file_path: str) -> np.ndarray:
     return mel_sgram
 
 
-def generate_random_spectrogram(dataset_path: str, metadata: pd.DataFrame) -> np.ndarray:
+def generate_random_spectrogram(
+    dataset_path: str, metadata: pd.DataFrame
+) -> np.ndarray:
     """
     Creates spectrogram for random file in the dataset.
     :return: Spectrogram
@@ -77,7 +79,9 @@ def generate_random_spectrogram(dataset_path: str, metadata: pd.DataFrame) -> np
     return generate_spectrogram(file_path)
 
 
-def generate_spectrogram_by_index(dataset_path: str, metadata: pd.DataFrame, index: int) -> np.ndarray:
+def generate_spectrogram_by_index(
+    dataset_path: str, metadata: pd.DataFrame, index: int
+) -> np.ndarray:
     """
     Creates spectrogram for file in the dataset.
     :return: Spectrogram
