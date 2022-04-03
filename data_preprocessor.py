@@ -19,12 +19,19 @@ class DataPreprocessor:
         self.config.read("config.ini")
 
         # Generate paths for data set
-        self.subsetFilePath = self.config.get("METADATA", "METADATA_PATH") + self.config.get("METADATA", "SUBSET_FILE")
-        self.labelFilePath = self.config.get("METADATA", "METADATA_PATH") + self.config.get("METADATA", "LABEL_FILE")
+        self.subsetFilePath = self.config.get(
+            "METADATA", "METADATA_PATH"
+        ) + self.config.get("METADATA", "SUBSET_FILE")
+        self.labelFilePath = self.config.get(
+            "METADATA", "METADATA_PATH"
+        ) + self.config.get("METADATA", "LABEL_FILE")
 
         self.datasetName = self.config.get("DATASET", "DATASET_NAME")
-        self.datasetPath = self.config.get("DATASET", "DATASET_PATH") + \
-                           self.config.get("DATASET", "DATASET_PREFIX") + self.config.get("DATASET", "DATASET_NAME")
+        self.datasetPath = (
+            self.config.get("DATASET", "DATASET_PATH")
+            + self.config.get("DATASET", "DATASET_PREFIX")
+            + self.config.get("DATASET", "DATASET_NAME")
+        )
 
     def createDatasetCsv(self) -> pd.DataFrame:
         """
@@ -35,7 +42,9 @@ class DataPreprocessor:
         trackMetadata = self.loadTracksMetadata()
 
         # Get dataset specific metadata for tracks
-        subsetMetadata = trackMetadata[trackMetadata["set", "subset"] <= self.datasetName]
+        subsetMetadata = trackMetadata[
+            trackMetadata["set", "subset"] <= self.datasetName
+        ]
 
         # Change metadata scope to genre information only
         subsetMetadata = subsetMetadata["track"]["genre_top"]

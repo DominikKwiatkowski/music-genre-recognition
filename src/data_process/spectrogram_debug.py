@@ -6,7 +6,9 @@ from matplotlib import pyplot as plt
 from src.data_process.spectrogram_generator import default_sample_rate
 
 
-def plot_spectrogram(spectrogram: np.ndarray, sample_rate: int = default_sample_rate) -> None:
+def plot_spectrogram(
+    spectrogram: np.ndarray, sample_rate: int = default_sample_rate
+) -> None:
     """
     Plots spectrogram.
     :param spectrogram: Spectrogram
