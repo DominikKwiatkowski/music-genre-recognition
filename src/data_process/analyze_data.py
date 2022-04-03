@@ -38,6 +38,7 @@ class AnalyzeData:
                             np.zeros(class_avarage.shape - spectogram.shape),
                             axis=0,
                         )
+                    # check if shape is higher than class_avarage, if so, cut
                     spectogram = spectogram[
                         : spectogram_shape[0], : spectogram_shape[1]
                     ]
