@@ -1,7 +1,9 @@
 import numpy as np
 from typing import Dict
 from src.data_process.spectrogram_generator import generate_spectrogram_by_index
-
+import pandas as pd
+import matplotlib.pyplot as plt
+from src.data_process.metadata_processor import MetadataProcessor
 
 class AnalyzeData:
     def __init__(self, data_path, metadata):
@@ -68,3 +70,36 @@ class AnalyzeData:
                     print(class_distances[class_name][class_name2])
         # save class_distances to file
         np.save("class_distances.npy", class_distances)
+
+    @staticmethod
+    def plot_avg_tracks_per_artist_by_genre() -> None:
+        processor = MetadataProcessor()
+        metadata = processor.load_full_metadata()
+
+        # Get dataset specific metadata for tracks
+        metadata = metadata[
+            metadata["set", "subset"] <= "small"
+            ]
+
+        # Change metadata scope to genre information only
+        track_genre_metadata = metadata['track']['genre_top']
+        track_artist_metadata = metadata['artist']['name']
+
+        track_artist_genre_metadata = pd.concat([track_genre_metadata, track_artist_metadata], axis=1)
+        track_artist_genre_metadata_grouped = dict(tuple(track_artist_genre_metadata.groupby('genre_top')))
+
+        result = []
+        for genre in track_artist_genre_metadata_grouped:
+            genre_group = track_artist_genre_metadata_grouped[genre]
+            if len(genre_group) > 1:
+                result.append((genre, len(genre_group) / len(genre_group.value_counts())))
+                print(genre + ": " + str(len(genre_group) / len(genre_group.value_counts())))
+
+        result_df = pd.DataFrame(result, columns=['genre', 'tracks_per_artist'])
+        print(result_df)
+        result_df.plot(kind='bar', x='genre', y='tracks_per_artist', legend=False,
+                       title='Avg. tracks per artist by genre')
+        plt.xlabel('Genre')
+        plt.ylabel('Avg. tracks per Artist')
+        plt.tight_layout()
+        plt.show()
