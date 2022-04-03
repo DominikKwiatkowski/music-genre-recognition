@@ -112,6 +112,14 @@ class MetadataProcessor:
     @staticmethod
     def split_metadata(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0) \
             -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+        """
+        Splits the metadata set into train, validation and test sets.
+        :param metadata: DataFrame with the metadata set.
+        :param train_ratio: Ratio of the train set.
+        :param val_ratio: Ratio of the validation set.
+        :param test_ratio: Ratio of the test set.
+        :return: train, validation and test metadata sets.
+        """
 
         if val_ratio == 0 and test_ratio == 0:
             val_ratio = test_ratio = (1 - train_ratio) / 2
@@ -127,6 +135,14 @@ class MetadataProcessor:
     @staticmethod
     def split_metadata_uniform(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0, add_val_to_test=False) \
             -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+        """
+        Splits the metadata set into train, validation and test sets uniformly.
+        :param metadata: DataFrame with the metadata set.
+        :param train_ratio: Ratio of the train set.
+        :param val_ratio: Ratio of the validation set.
+        :param test_ratio: Ratio of the test set.
+        :return: train, validation and test metadata sets.
+        """
         metadata_grouped = dict(tuple(metadata.groupby('genre_top')))
 
         train_metadata, val_metadata, test_metadata = [], [], []
