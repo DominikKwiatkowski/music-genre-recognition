@@ -5,7 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from src.data_process.metadata_processor import MetadataProcessor
 
-
 class AnalyzeData:
     def __init__(self, data_path, metadata):
         self.data_path = data_path
