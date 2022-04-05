@@ -1,9 +1,8 @@
-import configparser
-import os
-import pandas as pd
 import ast
+import os
+
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+import pandas as pd
 
 from src.data_process.config_paths import DataPathsManager
 
@@ -76,7 +75,7 @@ class MetadataProcessor:
         # Get dataset specific metadata for tracks
         subsetMetadata = trackMetadata[
             trackMetadata["set", "subset"] <= self.data_paths.datasetName
-        ]
+            ]
 
         # Change metadata scope to genre information only
         subsetMetadata = subsetMetadata["track"]["genre_top"]
@@ -115,7 +114,7 @@ class MetadataProcessor:
 
     @staticmethod
     def split_metadata(
-        metadata, train_ratio=0.8, val_ratio=0, test_ratio=0
+            metadata, train_ratio=0.8, val_ratio=0, test_ratio=0
     ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
         """
         Splits the metadata set into train, validation and test sets.
@@ -128,26 +127,26 @@ class MetadataProcessor:
 
         if val_ratio == 0 and test_ratio == 0:
             val_ratio = test_ratio = (1 - train_ratio) / 2
-
-        if test_ratio == 0:
+        elif test_ratio == 0:
             test_ratio = 1 - train_ratio - val_ratio
+        elif val_ratio == 0:
+            val_ratio = 1 - train_ratio - test_ratio
 
-        train_metadata, remainder_metadata = train_test_split(
-            metadata, train_size=train_ratio, shuffle=True
-        )
-        val_metadata, test_metadata = train_test_split(
-            remainder_metadata,
-            train_size=(val_ratio / (val_ratio + test_ratio)),
-            shuffle=True,
-        )
-        return train_metadata, val_metadata, test_metadata
+        train_end = int(train_ratio * len(metadata))
+        val_end = train_end + 1 + int(val_ratio * len(metadata))
+
+        train = metadata.iloc[: train_end]
+        val = metadata.iloc[train_end: val_end]
+        test = metadata.iloc[val_end:]
+
+        return train, val, test
 
     @staticmethod
-    def split_metadata_uniform(
-        metadata, train_ratio=0.8, val_ratio=0, test_ratio=0, add_val_to_test=False
-    ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+    def split_metadata_uniform(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0, add_val_to_test=False) \
+            -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
         """
         Splits the metadata set into train, validation and test sets uniformly.
+        :param add_val_to_test: If true, the validation set is added to the test set.
         :param metadata: DataFrame with the metadata set.
         :param train_ratio: Ratio of the train set.
         :param val_ratio: Ratio of the validation set.
@@ -156,27 +155,25 @@ class MetadataProcessor:
         """
         metadata_grouped = dict(tuple(metadata.groupby("genre_top")))
 
-        train_metadata, val_metadata, test_metadata = [], [], []
+        train_list, val_list, test_list = [], [], []
 
         for genre in metadata_grouped:
-            (
-                train_metadata_genre,
-                val_metadata_genre,
-                test_metadata_genre,
-            ) = MetadataProcessor.split_metadata(
+            train_genre, val_genre, test_genre = MetadataProcessor.split_metadata(
                 metadata_grouped[genre],
                 train_ratio=train_ratio,
                 val_ratio=val_ratio,
                 test_ratio=test_ratio,
             )
-            train_metadata.extend(train_metadata_genre.values.tolist())
-            if add_val_to_test:
-                test_metadata.extend(val_metadata_genre.values.tolist())
-            val_metadata.extend(val_metadata_genre.values.tolist())
-            test_metadata.extend(test_metadata_genre.values.tolist())
 
-        return (
-            pd.DataFrame(train_metadata, columns=metadata.columns),
-            pd.DataFrame(val_metadata, columns=metadata.columns),
-            pd.DataFrame(test_metadata, columns=metadata.columns),
-        )
+            train_list.extend(train_genre.values.tolist())
+            val_list.extend(val_genre.values.tolist())
+            test_list.extend(test_genre.values.tolist())
+
+        if add_val_to_test:
+            test_list.extend(val_list.values.tolist())
+
+        train = pd.DataFrame(train_list, columns=metadata.columns)
+        val = pd.DataFrame(val_list, columns=metadata.columns)
+        test = pd.DataFrame(test_list, columns=metadata.columns)
+
+        return train, val, test
