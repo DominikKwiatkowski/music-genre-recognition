@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from src.data_process.metadata_processor import MetadataProcessor
 
+
 class AnalyzeData:
     def __init__(self, data_path, metadata):
         self.data_path = data_path
@@ -42,8 +43,8 @@ class AnalyzeData:
                         )
                     # check if shape is higher than class_avarage, if so, cut
                     spectogram = spectogram[
-                        : spectogram_shape[0], : spectogram_shape[1]
-                    ]
+                                 : spectogram_shape[0], : spectogram_shape[1]
+                                 ]
                     class_avarage += spectogram / len(class_data)
                 except RuntimeError:
                     print(
@@ -88,18 +89,31 @@ class AnalyzeData:
         track_artist_genre_metadata = pd.concat([track_genre_metadata, track_artist_metadata], axis=1)
         track_artist_genre_metadata_grouped = dict(tuple(track_artist_genre_metadata.groupby('genre_top')))
 
-        result = []
+        result_artists_per_genre = []
+        result_tracks_per_artist_by_genre = []
         for genre in track_artist_genre_metadata_grouped:
             genre_group = track_artist_genre_metadata_grouped[genre]
             if len(genre_group) > 1:
-                result.append((genre, len(genre_group) / len(genre_group.value_counts())))
+                tracks_number = len(genre_group)
+                artists_number = len(genre_group.value_counts())
+                result_artists_per_genre.append((genre, artists_number))
+                result_tracks_per_artist_by_genre.append((genre, tracks_number / artists_number))
                 print(genre + ": " + str(len(genre_group) / len(genre_group.value_counts())))
 
-        result_df = pd.DataFrame(result, columns=['genre', 'tracks_per_artist'])
+        result_df = pd.DataFrame(result_tracks_per_artist_by_genre, columns=['genre', 'tracks_per_artist'])
         print(result_df)
         result_df.plot(kind='bar', x='genre', y='tracks_per_artist', legend=False,
                        title='Avg. tracks per artist by genre')
         plt.xlabel('Genre')
         plt.ylabel('Avg. tracks per Artist')
+        plt.tight_layout()
+        plt.show()
+
+        result_df = pd.DataFrame(result_artists_per_genre, columns=['genre', 'number_of_artists'])
+        print(result_df)
+        result_df.plot(kind='bar', x='genre', y='number_of_artists', legend=False,
+                       title='Number of artists by genre')
+        plt.xlabel('Genre')
+        plt.ylabel('Number of artists by genre')
         plt.tight_layout()
         plt.show()
