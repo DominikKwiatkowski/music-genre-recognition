@@ -157,6 +157,7 @@ class MetadataProcessor:
         :param train_ratio: Ratio of the train set.
         :param val_ratio: Ratio of the validation set.
         :param test_ratio: Ratio of the test set.
+        :param add_val_to_test: If true, validation set is added to test set.
         :return: train, validation and test metadata sets.
         """
         metadata_grouped = dict(tuple(metadata.groupby("genre_top")))
