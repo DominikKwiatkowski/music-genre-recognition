@@ -17,5 +17,6 @@ def plot_spectrogram(
     """
 
     plt.figure(figsize=(14, 5))
-    librosa.display.specshow(spectrogram, sr=sample_rate, x_axis="time", y_axis="mel")
+    librosa.display.specshow(spectrogram, sr=sample_rate, x_axis='time', y_axis='mel')
+    plt.colorbar(format='%+1.0f dB')
     plt.show()

@@ -8,6 +8,21 @@ from matplotlib import pyplot as plt
 
 default_sample_rate = 44100
 
+def plot_spectrogram(
+    spectrogram: np.ndarray, sample_rate: int = default_sample_rate
+) -> None:
+    """
+    Plots spectrogram.
+    :param spectrogram: Spectrogram
+    :param sample_rate: Sample rate
+    :return: None
+    """
+
+    plt.figure(figsize=(14, 5))
+    librosa.display.specshow(spectrogram, sr=sample_rate, x_axis="time", y_axis="mel")
+    plt.colorbar(format='%+2.0f dB')
+    plt.show()
+
 
 def index_to_file_path(dataset_path: str, metadata: pd.DataFrame, index: int) -> str:
     """
@@ -26,8 +41,8 @@ def index_to_file_path(dataset_path: str, metadata: pd.DataFrame, index: int) ->
     # Convert track_id to folder name
     folder_name = str(int(track_id / 1000)).zfill(3)
 
-    # Convert track_id to filename, which is id aligned to 6 "0"s + ".mp3"
-    file_name = str(track_id).zfill(6) + ".mp3"
+    # Convert track_id to filename, which is id aligned to 6 "0"s + ".wav"
+    file_name = str(track_id).zfill(6) + ".wav"
 
     return os.path.join(dataset_path, folder_name, file_name)
 
@@ -44,7 +59,7 @@ def generate_spectrogram(file_path: str) -> np.ndarray:
         print("File does not exist")
         return None
 
-    if not file_path.endswith(".mp3"):
+    if not file_path.endswith(".wav"):
         print("File is not a mp3 file")
         return None
 
@@ -57,15 +72,24 @@ def generate_spectrogram(file_path: str) -> np.ndarray:
 
     # Generate spectrogram data
     sgram = librosa.stft(signal)
-    sgram_mag, _ = librosa.magphase(sgram)
-    mel_scale_sgram = librosa.feature.melspectrogram(S=sgram_mag, sr=sample_rate)
-    mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.min)
+    sgram_mag = np.abs(sgram)
+    mel_scale_sgram = librosa.feature.melspectrogram(S=sgram_mag, sr=sample_rate, power=1)
+    mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.max)
 
     return mel_sgram
 
 
+def normalize_spectrogram(spectrogram: np.ndarray) -> np.ndarray:
+    """
+    Normalizes mel dB spectrogram to [-1; 1] range.
+    :return: Normalized spectrogram
+    """
+    norm_spectrogram = 2 * librosa.util.normalize(spectrogram) - 1
+    return norm_spectrogram
+
+
 def generate_random_spectrogram(
-    dataset_path: str, metadata: pd.DataFrame
+        dataset_path: str, metadata: pd.DataFrame
 ) -> np.ndarray:
     """
     Creates spectrogram for random file in the dataset.
@@ -80,7 +104,7 @@ def generate_random_spectrogram(
 
 
 def generate_spectrogram_by_index(
-    dataset_path: str, metadata: pd.DataFrame, index: int
+        dataset_path: str, metadata: pd.DataFrame, index: int
 ) -> np.ndarray:
     """
     Creates spectrogram for file in the dataset.
