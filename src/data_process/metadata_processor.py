@@ -98,24 +98,30 @@ class MetadataProcessor:
         return metadata
 
     @staticmethod
-    def plot_metadata_distribution(metadata: pd.DataFrame) -> None:
+    def plot_metadata_distribution(metadata: pd.DataFrame, title: str) -> None:
         """
         Plots the data set.
         :return:
         """
         # show genre count plot
         print(metadata["genre_top"].value_counts())
-
-        metadata["genre_top"].value_counts().plot(
-            kind="pie", autopct="%1.1f%%", shadow=True
-        )
-
+        metadata["genre_top"].value_counts().plot(kind="pie", autopct="%1.1f%%", shadow=True)
+        plt.title(title)
         plt.show()
 
     @staticmethod
-    def split_metadata(
-            metadata, train_ratio=0.8, val_ratio=0, test_ratio=0
-    ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+    def plot_train_val_test_counts(train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame) -> None:
+        """
+        Plots each dataset count on bar diagram
+        """
+        plt.figure(figsize=(10, 5))
+        plt.bar(["Train", "Validation", "Test"], [len(train), len(val), len(test)])
+        plt.title("Dataset count")
+        plt.show()
+
+    @staticmethod
+    def split_metadata(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0) \
+            -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
         """
         Splits the metadata set into train, validation and test sets.
         :param metadata: DataFrame with the metadata set.
@@ -142,11 +148,11 @@ class MetadataProcessor:
         return train, val, test
 
     @staticmethod
-    def split_metadata_uniform(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0, add_val_to_test=False) \
+    def split_metadata_uniform(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0, add_val_to_train=False) \
             -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
         """
         Splits the metadata set into train, validation and test sets uniformly.
-        :param add_val_to_test: If true, the validation set is added to the test set.
+        :param add_val_to_train: If true, the validation set is added to the train set.
         :param metadata: DataFrame with the metadata set.
         :param train_ratio: Ratio of the train set.
         :param val_ratio: Ratio of the validation set.
@@ -158,6 +164,7 @@ class MetadataProcessor:
         train_list, val_list, test_list = [], [], []
 
         for genre in metadata_grouped:
+            metadata_grouped[genre] = metadata_grouped[genre].sample(frac=1, random_state=42)
             train_genre, val_genre, test_genre = MetadataProcessor.split_metadata(
                 metadata_grouped[genre],
                 train_ratio=train_ratio,
@@ -169,8 +176,8 @@ class MetadataProcessor:
             val_list.extend(val_genre.values.tolist())
             test_list.extend(test_genre.values.tolist())
 
-        if add_val_to_test:
-            test_list.extend(val_list.values.tolist())
+        if add_val_to_train:
+            train_list.extend(val_list)
 
         train = pd.DataFrame(train_list, columns=metadata.columns)
         val = pd.DataFrame(val_list, columns=metadata.columns)
