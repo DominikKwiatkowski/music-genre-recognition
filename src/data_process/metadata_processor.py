@@ -1,5 +1,6 @@
 import ast
 import os
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -75,7 +76,7 @@ class MetadataProcessor:
         # Get dataset specific metadata for tracks
         subsetMetadata = trackMetadata[
             trackMetadata["set", "subset"] <= self.data_paths.datasetName
-            ]
+        ]
 
         # Change metadata scope to genre information only
         subsetMetadata = subsetMetadata["track"]["genre_top"]
@@ -105,12 +106,16 @@ class MetadataProcessor:
         """
         # show genre count plot
         print(metadata["genre_top"].value_counts())
-        metadata["genre_top"].value_counts().plot(kind="pie", autopct="%1.1f%%", shadow=True)
+        metadata["genre_top"].value_counts().plot(
+            kind="pie", autopct="%1.1f%%", shadow=True
+        )
         plt.title(title)
         plt.show()
 
     @staticmethod
-    def plot_train_val_test_counts(train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame) -> None:
+    def plot_train_val_test_counts(
+        train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame
+    ) -> None:
         """
         Plots each dataset count on bar diagram
         """
@@ -120,8 +125,12 @@ class MetadataProcessor:
         plt.show()
 
     @staticmethod
-    def split_metadata(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0) \
-            -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+    def split_metadata(
+        metadata: pd.DataFrame,
+        train_ratio: float = 0.8,
+        val_ratio: float = 0,
+        test_ratio: float = 0,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Splits the metadata set into train, validation and test sets.
         :param metadata: DataFrame with the metadata set.
@@ -141,30 +150,38 @@ class MetadataProcessor:
         train_end = int(train_ratio * len(metadata))
         val_end = train_end + 1 + int(val_ratio * len(metadata))
 
-        train = metadata.iloc[: train_end]
-        val = metadata.iloc[train_end: val_end]
+        train = metadata.iloc[:train_end]
+        val = metadata.iloc[train_end:val_end]
         test = metadata.iloc[val_end:]
 
         return train, val, test
 
     @staticmethod
-    def split_metadata_uniform(metadata, train_ratio=0.8, val_ratio=0, test_ratio=0, add_val_to_train=False) \
-            -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+    def split_metadata_uniform(
+        metadata: pd.DataFrame,
+        train_ratio: float = 0.8,
+        val_ratio: float = 0,
+        test_ratio: float = 0,
+        add_val_to_train: bool = False,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
-        Splits the metadata set into train, validation and test sets uniformly.
-        :param add_val_to_train: If true, the validation set is added to the train set.
-        :param metadata: DataFrame with the metadata set.
-        :param train_ratio: Ratio of the train set.
-        :param val_ratio: Ratio of the validation set.
-        :param test_ratio: Ratio of the test set.
-        :return: train, validation and test metadata sets.
+        Splits the metadata set into train, validation and test sets uniformly
+        :param add_val_to_train: if true, the validation set is added to the train set
+        :param metadata: dataFrame with the metadata set
+        :param train_ratio: ratio of the train set
+        :param val_ratio: ratio of the validation set
+        :param test_ratio: ratio of the test set
+        :param add_val_to_train: if true, validation set is added to test set
+        :return: train, validation and test metadata sets
         """
         metadata_grouped = dict(tuple(metadata.groupby("genre_top")))
 
         train_list, val_list, test_list = [], [], []
 
         for genre in metadata_grouped:
-            metadata_grouped[genre] = metadata_grouped[genre].sample(frac=1, random_state=42)
+            metadata_grouped[genre] = metadata_grouped[genre].sample(
+                frac=1, random_state=42
+            )
             train_genre, val_genre, test_genre = MetadataProcessor.split_metadata(
                 metadata_grouped[genre],
                 train_ratio=train_ratio,

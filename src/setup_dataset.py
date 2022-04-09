@@ -11,44 +11,33 @@ class DownloadProgressBar:
 
     def __call__(self, block_num, block_size, total_size):
         if not self.bar:
-            self.bar = alive_bar(total_size, title=f"Downloading status")
+            self.bar = alive_bar(total_size, title="Downloading status")
             self.updateMethod = self.bar.__enter__()
 
         self.updateMethod(block_size)
 
 
-def unzip(filepath: str):
+def download_data(target_dir: str, url: str) -> None:
     """
-    Unzip file with zipfile.
-    """
-
-    import zipfile
-
-    with zipfile.ZipFile(filepath, "r") as zip_ref:
-        zip_ref.extractall(os.path.dirname(filepath))
-
-
-def download_data(target_dir: str, url: str):
-    """
-    Download and unzip data.
+    Download and unpack the data.
     """
 
     data_name = url.split("/")[-1]
 
-    # Download zip from url and save it to target_dir as name from url
+    # Download data from url and save it to target_dir as name from url
     print(f"Downloading: {url}")
     urllib.request.urlretrieve(url, f"{target_dir}/{data_name}", DownloadProgressBar())
 
-    # Unzip data with multiple threads
+    # Unpack data
     print(f"Unzipping data: {target_dir}/{data_name}")
     os.system(f"unzip {target_dir}/{data_name} -d {target_dir}")
 
-    # Remove zip file
+    # Remove packed data file
     print(f"Removing zip file: {target_dir}/{data_name}")
     os.remove(f"{target_dir}/{data_name}")
 
 
-def setup_environment(url: str):
+def setup_environment(url: str) -> None:
     """
     Download and unpack data.
     """
@@ -58,11 +47,6 @@ def setup_environment(url: str):
     # Create target directory
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
-
-    # Validate if url finishes with .zip
-    if not url.endswith(".zip"):
-        print("URL must end with .zip")
-        exit(1)
 
     download_data(target_dir, url)
 
