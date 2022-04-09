@@ -4,7 +4,6 @@ from src.data_process import spectrogram_generator
 from src.data_process import spectrogram_augmenter
 from src.data_process import spectrogram_debug
 from src.data_process import dataset_analysis
-from src.data_process import dataset_preparation
 
 if __name__ == "__main__":
     data_paths = DataPathsManager()
@@ -13,23 +12,7 @@ if __name__ == "__main__":
     processor = MetadataProcessor()
     metadata = processor.get_metadata()
 
-    spectrogram = spectrogram_generator.generate_spectrogram_by_index(data_paths.datasetPath, metadata, 10)
-    spectrogram_debug.validate_noise_overlay(spectrogram)
-
-    if False:
-        # Plot metadata distribution
-        processor.plot_metadata_distribution(metadata)
-        train_metadata, val_metadata, test_metadata = processor.split_metadata_uniform(
-            metadata
-        )
-
-    if False:
-        # Plot metadata distribution for train, val and test
-        processor.plot_metadata_distribution(train_metadata)
-        processor.plot_metadata_distribution(val_metadata)
-        processor.plot_metadata_distribution(test_metadata)
-
-    if False:
+    if True:
         SPLIT = 3
 
         if SPLIT == 1:
@@ -41,7 +24,9 @@ if __name__ == "__main__":
             normalize = True
             augment = True
         elif SPLIT == 3:
-            train, val, test = processor.split_metadata_uniform(metadata, 0.8, 0.1, 0.1, add_val_to_train=True)
+            train, val, test = processor.split_metadata_uniform(
+                metadata, 0.8, 0.1, 0.1, add_val_to_train=True
+            )
             normalize = True
             augment = True
 
@@ -53,12 +38,18 @@ if __name__ == "__main__":
         processor.plot_metadata_distribution(test, "TEST set distribution")
         processor.plot_train_val_test_counts(train, val, test)
 
-        # Prepare dataset, generate spectrograms
-        for dataset_metadata, path in ((train, data_paths.trainDatasetPath),
-                                       (val, data_paths.trainDatasetPath),
-                                       (test, data_paths.testDatasetPath)):
-            dataset_preparation.prepare(dataset_path=data_paths.datasetPath, metadata=dataset_metadata,
-                                        save_path=path, normalize=normalize)
+        # Prepare dataset and generate spectrogram
+        for dataset_metadata, path in (
+            (train, data_paths.trainDatasetPath),
+            (val, data_paths.trainDatasetPath),
+            (test, data_paths.testDatasetPath),
+        ):
+            spectrogram_generator.generate_all_spectrograms(
+                dataset_path=data_paths.datasetPath,
+                metadata=dataset_metadata,
+                save_path=path,
+                normalize=normalize,
+            )
 
     if False:
         # Generate random spectrogram
