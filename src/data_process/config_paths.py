@@ -21,6 +21,12 @@ class DataPathsManager:
             + self.config.get("DATASET", "DATASET_NAME")
         )
 
-        self.trainDatasetPath: str = self.datasetPath + self.config.get("DATASET", "TRAIN_PATH")
-        self.valDatasetPath: str = self.datasetPath + self.config.get("DATASET", "VAL_PATH")
-        self.testDatasetPath: str = self.datasetPath + self.config.get("DATASET", "TEST_PATH")
+        self.trainDatasetPath: str = self.datasetPath + self.config.get(
+            "DATASET", "TRAIN_PATH"
+        )
+        self.valDatasetPath: str = self.datasetPath + self.config.get(
+            "DATASET", "VAL_PATH"
+        )
+        self.testDatasetPath: str = self.datasetPath + self.config.get(
+            "DATASET", "TEST_PATH"
+        )

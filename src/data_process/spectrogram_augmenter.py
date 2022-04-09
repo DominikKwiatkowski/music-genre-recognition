@@ -15,10 +15,10 @@ def time_shift(signal: np.ndarray, shift_limit: float = 0.1) -> np.ndarray:
 
 
 def mask_spectrogram(
-        spectrogram: np.ndarray,
-        max_mask_pct: float = 0.1,
-        n_freq_masks: int = 1,
-        n_time_masks: int = 1,
+    spectrogram: np.ndarray,
+    max_mask_pct: float = 0.1,
+    n_freq_masks: int = 1,
+    n_time_masks: int = 1,
 ) -> np.ndarray:
     """
     Augment spectrogram by masking out frequency and time bins
@@ -37,21 +37,19 @@ def mask_spectrogram(
     for _ in range(n_freq_masks):
         f_idx = np.random.randint(0, n_mels)
         f_width = np.random.randint(1, int(freq_mask_param))
-        aug_signal[f_idx: f_idx + f_width, :] = mask_value
+        aug_signal[f_idx : f_idx + f_width, :] = mask_value
 
     time_mask_param = max_mask_pct * n_steps
     for _ in range(n_time_masks):
         t_idx = np.random.randint(0, n_steps)
         t_width = np.random.randint(1, int(time_mask_param))
-        aug_signal[:, t_idx: t_idx + t_width] = mask_value
+        aug_signal[:, t_idx : t_idx + t_width] = mask_value
 
     return aug_signal
 
 
 def noise_overlay(
-        spectrogram: np.ndarray,
-        noise_pct: float = 0.1,
-        noise_amt: float = 0.01
+    spectrogram: np.ndarray, noise_pct: float = 0.1, noise_amt: float = 0.01
 ) -> np.ndarray:
     """
     Overlay noise on spectrogram

@@ -8,7 +8,7 @@ from src.data_process.spectrogram_generator import default_sample_rate
 
 
 def plot_spectrogram(
-        spectrogram: np.ndarray, sample_rate: int = default_sample_rate
+    spectrogram: np.ndarray, sample_rate: int = default_sample_rate
 ) -> None:
     """
     Plot spectrogram.
@@ -18,15 +18,15 @@ def plot_spectrogram(
     """
 
     plt.figure(figsize=(14, 5))
-    librosa.display.specshow(spectrogram, sr=sample_rate, x_axis='time', y_axis='mel')
-    plt.colorbar(format='%+1.0f dB')
+    librosa.display.specshow(spectrogram, sr=sample_rate, x_axis="time", y_axis="mel")
+    plt.colorbar(format="%+1.0f dB")
     plt.show()
 
 
-def validate_noise_overlay(spectrogram: np.ndarray) -> None:
+def plot_sample_noise_overlay(spectrogram: np.ndarray) -> None:
     """
-    Test noise overlay.
-    :return: None
+    Plot spectrogram with noise overlay to validate if noise is added.
+    :param spectrogram: spectrogram data
     """
 
     # Plot spectrogram
