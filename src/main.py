@@ -12,7 +12,7 @@ if __name__ == "__main__":
     processor = MetadataProcessor()
     metadata = processor.get_metadata()
 
-    if True:
+    if False:
         SPLIT = 3
 
         if SPLIT == 1:
@@ -40,9 +40,9 @@ if __name__ == "__main__":
 
         # Prepare dataset and generate spectrogram
         for dataset_metadata, path in (
-            (train, data_paths.trainDatasetPath),
-            (val, data_paths.trainDatasetPath),
-            (test, data_paths.testDatasetPath),
+                (train, data_paths.trainDatasetPath),
+                (val, data_paths.trainDatasetPath),
+                (test, data_paths.testDatasetPath),
         ):
             spectrogram_generator.generate_all_spectrograms(
                 dataset_path=data_paths.datasetPath,
@@ -62,3 +62,7 @@ if __name__ == "__main__":
             spectrogram, 0.1, 5, 0
         )
         spectrogram_debug.plot_spectrogram(augmented_spectrogram)
+
+    if True:
+        # Validate shape of the spectrogram
+        dataset_analysis.validate_shape()
