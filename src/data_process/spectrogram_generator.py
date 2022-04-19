@@ -158,11 +158,14 @@ def generate_all_spectrograms(
 
     # Generate and save spectrogram
     for index in range(len(metadata)):
-        file_path = index_to_file_path(dataset_path, metadata, index)
-        spectrogram = generate_spectrogram(file_path)
-        if normalize:
-            spectrogram = normalize_spectrogram(spectrogram)
+        try:
+            file_path = index_to_file_path(dataset_path, metadata, index)
+            spectrogram = generate_spectrogram(file_path)
+            if normalize:
+                spectrogram = normalize_spectrogram(spectrogram)
 
-        filename = str(metadata.iloc[index]["track_id"])
-        save_file_path = os.path.join(save_path, filename)
-        np.save(save_file_path, spectrogram)
+            filename = str(metadata.iloc[index]["track_id"])
+            save_file_path = os.path.join(save_path, filename)
+            np.save(save_file_path, spectrogram)
+        except RuntimeError:
+            print(f"Error generating spectrogram for file {index}")

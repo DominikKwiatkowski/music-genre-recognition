@@ -4,16 +4,18 @@ from src.data_process import spectrogram_generator
 from src.data_process import spectrogram_augmenter
 from src.data_process import spectrogram_debug
 from src.data_process import dataset_analysis
+from dataset_to_wav import convert_mp3_dataset_to_wav
+from training.training_config import TrainingConfig
+from training.training_manager import run_training
 
 if __name__ == "__main__":
     data_paths = DataPathsManager()
-
     # Get metadata
     processor = MetadataProcessor()
     metadata = processor.get_metadata()
 
-    if False:
-        SPLIT = 3
+    if True:
+        SPLIT = 2
 
         if SPLIT == 1:
             train, val, test = processor.split_metadata(metadata, 0.8, 0.1, 0.1)
@@ -30,26 +32,26 @@ if __name__ == "__main__":
             normalize = True
             augment = True
 
-        # Plot metadata distribution
-        processor.plot_metadata_distribution(metadata, "Metadata distribution")
-
-        processor.plot_metadata_distribution(train, "TRAIN set distribution")
-        processor.plot_metadata_distribution(val, "VAL set distribution")
-        processor.plot_metadata_distribution(test, "TEST set distribution")
-        processor.plot_train_val_test_counts(train, val, test)
-
-        # Prepare dataset and generate spectrogram
-        for dataset_metadata, path in (
-                (train, data_paths.trainDatasetPath),
-                (val, data_paths.trainDatasetPath),
-                (test, data_paths.testDatasetPath),
-        ):
-            spectrogram_generator.generate_all_spectrograms(
-                dataset_path=data_paths.datasetPath,
-                metadata=dataset_metadata,
-                save_path=path,
-                normalize=normalize,
-            )
+        # # Plot metadata distribution
+        # processor.plot_metadata_distribution(metadata, "Metadata distribution")
+        #
+        # processor.plot_metadata_distribution(train, "TRAIN set distribution")
+        # processor.plot_metadata_distribution(val, "VAL set distribution")
+        # processor.plot_metadata_distribution(test, "TEST set distribution")
+        # processor.plot_train_val_test_counts(train, val, test)
+        #
+        # # Prepare dataset and generate spectrogram
+        # for dataset_metadata, path in (
+        #         (train, data_paths.trainDatasetPath),
+        #         (val, data_paths.valDatasetPath),
+        #         (test, data_paths.testDatasetPath),
+        # ):
+        #     spectrogram_generator.generate_all_spectrograms(
+        #         dataset_path=data_paths.datasetPath,
+        #         metadata=dataset_metadata,
+        #         save_path=path,
+        #         normalize=normalize,
+        #     )
 
     if False:
         # Generate random spectrogram
@@ -63,6 +65,8 @@ if __name__ == "__main__":
         )
         spectrogram_debug.plot_spectrogram(augmented_spectrogram)
 
-    if True:
+    if False:
         # Validate shape of the spectrogram
         dataset_analysis.validate_shape()
+    training_config = TrainingConfig("base-model")
+    run_training(training_config, metadata, processor, data_paths)

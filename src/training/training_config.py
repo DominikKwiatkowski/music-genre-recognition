@@ -12,28 +12,54 @@ class TrainingConfig:
         self.batch_size: int = 32
 
         # Number of epochs to train for
-        self.epochs: int = 10
+        self.epochs: int = 5
 
         # Optimizer
         self.optimizer: tf.keras.optimizer = tf.keras.optimizers.Adam()
 
         # Loss function
-        self.loss: tf.keras.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        self.loss: tf.keras.loss = (
+            tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+        )
 
         # Input shape
         self.input_h = 128  # Always 128
-        self.input_w = 512  # Corresponds to the track's length; 512 is around 6 seconds
-
+        self.input_w = (
+            1028  # Corresponds to the track's length; 512 is around 6 seconds
+        )
         # Mode layers definition
-        self.model = models.Sequential([
-            layers.Input(shape=(self.input_h, self.input_w)),
-            layers.Resizing(32, 32),
-            layers.Conv2D(32, 3, activation='relu'),
-            layers.Conv2D(64, 3, activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Dropout(0.25),
-            layers.Flatten(),
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(8),
-        ])
+        self.model = models.Sequential()
+        self.model.add(layers.Input((128, 1028, 1)))
+
+        self.model.add(layers.Conv2D(8, kernel_size=(3, 3), strides=(1, 1)))
+        self.model.add(layers.BatchNormalization(axis=3))
+        self.model.add(layers.Activation("relu"))
+        self.model.add(layers.MaxPooling2D((2, 2)))
+
+        self.model.add(layers.Conv2D(16, kernel_size=(3, 3), strides=(1, 1)))
+        self.model.add(layers.BatchNormalization(axis=3))
+        self.model.add(layers.Activation("relu"))
+        self.model.add(layers.MaxPooling2D((2, 2)))
+
+        self.model.add(layers.Conv2D(32, kernel_size=(3, 3), strides=(1, 1)))
+        self.model.add(layers.BatchNormalization(axis=3))
+        self.model.add(layers.Activation("relu"))
+        self.model.add(layers.MaxPooling2D((2, 2)))
+
+        self.model.add(layers.Conv2D(64, kernel_size=(3, 3), strides=(1, 1)))
+        self.model.add(layers.BatchNormalization(axis=-1))
+        self.model.add(layers.Activation("relu"))
+        self.model.add(layers.MaxPooling2D((2, 2)))
+
+        self.model.add(layers.Conv2D(128, kernel_size=(3, 3), strides=(1, 1)))
+        self.model.add(layers.BatchNormalization(axis=-1))
+        self.model.add(layers.Activation("relu"))
+        self.model.add(layers.MaxPooling2D((2, 2)))
+
+        self.model.add(layers.Flatten())
+
+        self.model.add(layers.Dropout(rate=0.3))
+
+        self.model.add(layers.Dense(8, activation="softmax"))
+
+        self.model.summary()
