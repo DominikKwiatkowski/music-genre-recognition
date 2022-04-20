@@ -30,3 +30,17 @@ class DataPathsManager:
         self.testDatasetPath: str = self.datasetPath + self.config.get(
             "DATASET", "TEST_PATH"
         )
+
+        self.model_path: str = self.config.get("MODEL", "MODEL_PATH")
+
+    def get_train_dataset_path(self, split: int) -> str:
+        return f"{self.trainDatasetPath}{split}/"
+
+    def get_val_dataset_path(self, split: int) -> str:
+        return f"{self.valDatasetPath}{split}/"
+
+    def get_test_dataset_path(self, split: int) -> str:
+        return f"{self.testDatasetPath}{split}/"
+
+    def get_model_path(self, split: int) -> str:
+        return f"{self.model_path}{split}/"

@@ -167,5 +167,5 @@ def generate_all_spectrograms(
             filename = str(metadata.iloc[index]["track_id"])
             save_file_path = os.path.join(save_path, filename)
             np.save(save_file_path, spectrogram)
-        except RuntimeError:
+        except TypeError:
             print(f"Error generating spectrogram for file {index}")

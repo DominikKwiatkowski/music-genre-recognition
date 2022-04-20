@@ -9,7 +9,7 @@ class TrainingConfig:
         self.model_name: str = name
 
         # Batch size for training
-        self.batch_size: int = 32
+        self.batch_size: int = 64
 
         # Number of epochs to train for
         self.epochs: int = 5
@@ -25,11 +25,11 @@ class TrainingConfig:
         # Input shape
         self.input_h = 128  # Always 128
         self.input_w = (
-            1028  # Corresponds to the track's length; 512 is around 6 seconds
+            1024  # Corresponds to the track's length; 512 is around 6 seconds
         )
         # Mode layers definition
         self.model = models.Sequential()
-        self.model.add(layers.Input((128, 1028, 1)))
+        self.model.add(layers.Input((self.input_h, self.input_w, 1)))
 
         self.model.add(layers.Conv2D(8, kernel_size=(3, 3), strides=(1, 1)))
         self.model.add(layers.BatchNormalization(axis=3))
