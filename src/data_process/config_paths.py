@@ -1,4 +1,5 @@
 import configparser
+import os
 
 
 class DataPathsManager:
@@ -15,23 +16,29 @@ class DataPathsManager:
         ) + self.config.get("METADATA", "LABEL_FILE")
 
         self.datasetName: str = self.config.get("DATASET", "DATASET_NAME")
+        self.datasetDir: str = self.config.get("DATASET", "DATASET_PATH")
         self.datasetPath: str = (
-            self.config.get("DATASET", "DATASET_PATH")
-            + self.config.get("DATASET", "DATASET_PREFIX")
-            + self.config.get("DATASET", "DATASET_NAME")
+                self.datasetDir
+                + self.config.get("DATASET", "DATASET_PREFIX")
+                + self.config.get("DATASET", "DATASET_NAME")
         )
 
-        self.trainDatasetPath: str = self.datasetPath + self.config.get(
-            "DATASET", "TRAIN_PATH"
-        )
-        self.valDatasetPath: str = self.datasetPath + self.config.get(
-            "DATASET", "VAL_PATH"
-        )
-        self.testDatasetPath: str = self.datasetPath + self.config.get(
-            "DATASET", "TEST_PATH"
-        )
+        # Load prepared data paths
+        self.trainDatasetPath: str = self.datasetDir + self.config.get("DATASET", "PREP_TRAIN_PATH")
+        self.valDatasetPath: str = self.datasetDir + self.config.get("DATASET", "PREP_VAL_PATH")
+        self.testDatasetPath: str = self.datasetDir + self.config.get("DATASET", "PREP_TEST_PATH")
 
-        self.model_path: str = self.config.get("MODEL", "MODEL_PATH")
+        # Load and initialize training paths
+        self.training_root_path: str = self.config.get("TRAINING", "TRAINING_ROOT_PATH")
+        self.training_log_path: str = self.config.get("TRAINING", "TRAINING_LOG_PATH")
+        self.model_path: str = self.config.get("TRAINING", "MODEL_PATH")
+
+        if not os.path.exists(self.training_root_path):
+            os.mkdir(self.training_root_path)
+        if not os.path.exists(self.training_log_path):
+            os.mkdir(self.training_log_path)
+        if not os.path.exists(self.model_path):
+            os.mkdir(self.model_path)
 
     def get_train_dataset_path(self, split: int) -> str:
         return f"{self.trainDatasetPath}{split}/"
@@ -41,6 +48,3 @@ class DataPathsManager:
 
     def get_test_dataset_path(self, split: int) -> str:
         return f"{self.testDatasetPath}{split}/"
-
-    def get_model_path(self, split: int) -> str:
-        return f"{self.model_path}{split}/"

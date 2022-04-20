@@ -1,32 +1,34 @@
 import tensorflow as tf
+
 from tensorflow.keras import layers
 from tensorflow.keras import models
 
 
 class TrainingConfig:
-    def __init__(self, name: str):
-        # Config name to help with identification
-        self.model_name: str = name
-
+    def __init__(self):
         # Batch size for training
-        self.batch_size: int = 64
+        self.batch_size: int = 32
 
         # Number of epochs to train for
-        self.epochs: int = 5
+        self.epochs: int = 10
+
+        # Learning rate
+        self.learning_rate: float = 0.001
 
         # Optimizer
-        self.optimizer: tf.keras.optimizer = tf.keras.optimizers.Adam()
+        self.optimizer: tf.keras.optimizer = tf.keras.optimizers.Adam(
+            learning_rate=self.learning_rate
+        )
 
         # Loss function
-        self.loss: tf.keras.loss = (
-            tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        )
+        self.loss: tf.keras.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
 
         # Input shape
         self.input_h = 128  # Always 128
         self.input_w = (
             1024  # Corresponds to the track's length; 512 is around 6 seconds
         )
+
         # Mode layers definition
         self.model = models.Sequential()
         self.model.add(layers.Input((self.input_h, self.input_w, 1)))
@@ -63,3 +65,6 @@ class TrainingConfig:
         self.model.add(layers.Dense(8, activation="softmax"))
 
         self.model.summary()
+
+        # Allo memory growth to fix memory issues
+

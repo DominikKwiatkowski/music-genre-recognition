@@ -5,6 +5,7 @@ import librosa.display
 import numpy as np
 import pandas as pd
 import torch
+from alive_progress import alive_bar
 
 default_sample_rate = 44100
 
@@ -56,7 +57,9 @@ def get_signal(file_path: str) -> np.ndarray:
 
 
 def get_signal_by_index(
-    dataset_path: str, metadata: pd.DataFrame, index: int
+        dataset_path: str,
+        metadata: pd.DataFrame,
+        index: int
 ) -> np.ndarray:
     """
     Loads signal from file.
@@ -113,7 +116,8 @@ def normalize_spectrogram(spectrogram: np.ndarray) -> np.ndarray:
 
 
 def generate_random_spectrogram(
-    dataset_path: str, metadata: pd.DataFrame
+        dataset_path: str,
+        metadata: pd.DataFrame
 ) -> np.ndarray:
     """
     Creates spectrogram for random file in the dataset.
@@ -128,21 +132,29 @@ def generate_random_spectrogram(
 
 
 def generate_spectrogram_by_index(
-    dataset_path: str, metadata: pd.DataFrame, index: int
+        dataset_path: str,
+        metadata: pd.DataFrame,
+        index: int
 ) -> np.ndarray:
     """
     Creates spectrogram for file in the dataset.
+    :param dataset_path: path to the dataset
+    :param metadata: metadata of the dataset
+    :param index: index of the track
     :return: Spectrogram
     """
 
-    # Generate file path
+    # Generate file path from index
     file_path = index_to_file_path(dataset_path, metadata, index)
 
     return generate_spectrogram(file_path)
 
 
 def generate_all_spectrograms(
-    dataset_path: str, metadata: pd.DataFrame, save_path: str, normalize: bool
+        dataset_path: str,
+        metadata: pd.DataFrame,
+        save_path: str,
+        normalize: bool
 ) -> None:
     """
     Create spectrograms for all files in the dataset and save them to disk
@@ -157,15 +169,18 @@ def generate_all_spectrograms(
         os.makedirs(save_path)
 
     # Generate and save spectrogram
-    for index in range(len(metadata)):
-        try:
-            file_path = index_to_file_path(dataset_path, metadata, index)
-            spectrogram = generate_spectrogram(file_path)
-            if normalize:
-                spectrogram = normalize_spectrogram(spectrogram)
+    with alive_bar(len(metadata), title=f"Preparing spectrograms for {save_path}") as bar:
+        for index in range(len(metadata)):
+            try:
+                file_path = index_to_file_path(dataset_path, metadata, index)
+                spectrogram = generate_spectrogram(file_path)
+                if normalize:
+                    spectrogram = normalize_spectrogram(spectrogram)
 
-            filename = str(metadata.iloc[index]["track_id"])
-            save_file_path = os.path.join(save_path, filename)
-            np.save(save_file_path, spectrogram)
-        except TypeError:
-            print(f"Error generating spectrogram for file {index}")
+                filename = str(metadata.iloc[index]["track_id"])
+                save_file_path = os.path.join(save_path, filename)
+                np.save(save_file_path, spectrogram)
+            except TypeError:
+                print(f"Error generating spectrogram for file {index}")
+
+            bar()
