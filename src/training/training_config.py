@@ -65,6 +65,3 @@ class TrainingConfig:
         self.model.add(layers.Dense(8, activation="softmax"))
 
         self.model.summary()
-
-        # Allo memory growth to fix memory issues
-

@@ -1,6 +1,6 @@
 import os
 import shutil
-
+import math
 import pandas as pd
 import tensorflow as tf
 import numpy as np
@@ -11,18 +11,37 @@ from sklearn.utils import shuffle
 
 from src.data_process.config_paths import DataPathsManager
 from src.training.training_config import TrainingConfig
+from src.data_process.spectrogram_augmenter import noise_overlay, mask_spectrogram
+
+label_encoder = preprocessing.LabelEncoder()
+
+
+def augment_data(spectrogram: np.ndarray) -> list:
+    """
+    Augment the given data.
+    :param spectrogram: Data to augment
+    :return: Augmented data
+    """
+    result = [
+        mask_spectrogram(spectrogram, n_freq_masks=1, n_time_masks=1),
+        noise_overlay(spectrogram),
+    ]
+
+    return result
 
 
 def load_data(
-        path: str,
+        training_config: TrainingConfig,
         metadata: pd.DataFrame,
-        training_config: TrainingConfig
+        path: str,
+        augment: bool = False
 ) -> Tuple[list, list]:
     """
     Load the data from the given path.
-    :param path: Path to the data
-    :param metadata: Metadata of the data
     :param training_config: Configuration for the training
+    :param metadata: Metadata of the data
+    :param path: Path to the data
+    :param augment: Augment loaded data
     :return:
     """
 
@@ -33,13 +52,18 @@ def load_data(
         try:
             # Load the data
             data = np.load(os.path.join(path, f"{row[1]['track_id']}.npy"))
-
             # Check if the data is long enough
             if data.shape[1] > training_config.input_w:
                 result.append(data)
                 result_labels.append(row[1]["genre_top"])
+                if augment:
+                    aug_data = augment_data(data)
+                    result.extend(aug_data)
+                    # Add the same label for each augmentation
+                    result_labels.extend([row[1]["genre_top"]] * len(aug_data))
         except (FileNotFoundError, ValueError):
             pass
+
     return result, result_labels
 
 
@@ -58,12 +82,15 @@ def prepare_data(
     input_data = []
     for data in org_data:
         # Find starting point for each data
-        starting_index = np.random.randint(0, data.shape[1] - training_config.input_w)
+        starting_index = np.random.randint(
+            0, data.shape[1] - training_config.input_w
+        )
         input_data.append(
             data[:, starting_index: starting_index + training_config.input_w]
         )
     input_data = np.stack(input_data)
     input_label = np.array(labels)
+
     return input_data, input_label
 
 
@@ -71,12 +98,13 @@ def run_training(
         training_name: str,
         training_config: TrainingConfig,
         training_metadata: pd.DataFrame,
+        training_path: str,
         validation_metadata: pd.DataFrame,
+        validation_path: str,
         data_paths: DataPathsManager,
-        split_id: int,
+        augment: bool,
         overwrite_previous: bool = False
 ) -> None:
-    label_encoder = preprocessing.LabelEncoder()
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=f"{data_paths.training_log_path}{training_name}")
 
     # Protect previous models from overwriting
@@ -101,12 +129,8 @@ def run_training(
     )
 
     # Load all training and validation data into memory
-    train_data, train_label = load_data(
-        data_paths.get_train_dataset_path(split_id), training_metadata, training_config
-    )
-    val_data, val_label = load_data(
-        data_paths.get_val_dataset_path(split_id), validation_metadata, training_config
-    )
+    train_data, train_label = load_data(training_config, training_metadata, training_path, augment)
+    val_data, val_label = load_data(training_config, validation_metadata, validation_path)
 
     # Change labels from string to int
     train_label = label_encoder.fit_transform(train_label)
@@ -115,7 +139,9 @@ def run_training(
     # Every epoch has own data
     for _ in range(training_config.epochs):
         # Get subarrays for training and validation
-        input_data, input_label = prepare_data(training_config, train_data, train_label)
+        input_data, input_label = prepare_data(
+            training_config, train_data, train_label
+        )
         val_input_data, val_input_label = prepare_data(
             training_config, val_data, val_label
         )
@@ -123,40 +149,55 @@ def run_training(
         # Shuffle the data
         input_data, input_label = shuffle(input_data, input_label)
         val_input_data, val_input_label = shuffle(val_input_data, val_input_label)
+        # Split data to parts of size 6400
+        # TODO: Find better solution
+        if input_data.shape[0] > 6400:
+            input_data = np.array_split(
+                input_data, math.ceil(input_data.shape[0] / 6400)
+            )
+            input_label = np.array_split(
+                input_label, math.ceil(input_label.shape[0] / 6400)
+            )
+        else:
+            input_data = [input_data]
+            input_label = [input_label]
 
-        # Train the model
-        training_config.model.fit(
-            input_data,
-            input_label,
-            epochs=1,
-            validation_data=(val_input_data, val_input_label),
-            batch_size=training_config.batch_size,
-            callbacks=tensorboard_callback,
-        )
+        # For each part of data, run model training
+        for i in range(len(input_data)):
+            training_config.model.fit(
+                input_data[i],
+                input_label[i],
+                epochs=1,
+                batch_size=training_config.batch_size,
+                validation_data=(val_input_data, val_input_label),
+                shuffle=True,
+                callbacks=tensorboard_callback,
+            )
+
+            # Clear gpu session
+            tf.keras.backend.clear_session()
 
         # Collect garbage to avoid memory leak
         gc.collect()
 
-    # # Load test data
-    # test_data, test_label = load_data(
-    #     data_paths.get_test_dataset_path(split_id), test, training_config
-    # )
-    # test_label = label_encoder.fit_transform(test_label)
-    # test_input_data, test_input_label = prepare_data(
-    #     training_config, test_data, test_label
-    # )
-    #
-    # # Shuffle and run test data
-    # test_input_data, test_input_label = shuffle(test_input_data, test_input_label)
-    # test_loss, test_acc = training_config.model.evaluate(
-    #     test_input_data, test_input_label
-    # )
-    #
-    # # Print result
-    # print(f"Test loss: {test_loss}, test accuracy: {test_acc}")
-
     # Save model
     training_config.model.save(data_paths.model_path + training_name)
 
-    # Clear gpu session
-    tf.keras.backend.clear_session()
+
+def test_model(
+        training_config: TrainingConfig,
+        test_metadata: pd.DataFrame,
+        test_path: str
+) -> None:
+    # Load test data
+    test_data, test_label = load_data(training_config, test_metadata, test_path)
+    test_label = label_encoder.fit_transform(test_label)
+    test_input_data, test_input_label = prepare_data(training_config, test_data, test_label)
+
+    # Shuffle and run test data
+    test_input_data, test_input_label = shuffle(test_input_data, test_input_label)
+    test_loss, test_acc = training_config.model.evaluate(
+        test_input_data, test_input_label
+    )
+    # Print result
+    print(f"Test loss: {test_loss}, test accuracy: {test_acc}")

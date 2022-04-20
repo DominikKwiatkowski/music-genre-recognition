@@ -21,8 +21,10 @@ if __name__ == "__main__":
             f"sample-training-{split_id}",
             default_config,
             train,
+            data_paths.get_train_dataset_path(split_id),
             val,
+            data_paths.get_val_dataset_path(split_id),
             data_paths,
-            split_id,
+            augment=True,
             overwrite_previous=True
         )
