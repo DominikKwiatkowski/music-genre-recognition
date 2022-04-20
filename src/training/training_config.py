@@ -24,9 +24,7 @@ class TrainingConfig:
 
         # Input shape
         self.input_h = 128  # Always 128
-        self.input_w = (
-            1024  # Corresponds to the track's length; 512 is around 6 seconds
-        )
+        self.input_w = 512  # Corresponds to the track's length; 512 is around 6 seconds
         # Mode layers definition
         self.model = models.Sequential()
         self.model.add(layers.Input((self.input_h, self.input_w, 1)))

@@ -8,7 +8,7 @@ from src.data_process import spectrogram_debug
 from src.data_process import dataset_analysis
 from dataset_to_wav import convert_mp3_dataset_to_wav
 from training.training_config import TrainingConfig
-from training.training_manager import run_training
+from training.training_manager import TrainingManager
 
 if __name__ == "__main__":
     data_paths = DataPathsManager()
@@ -57,7 +57,15 @@ if __name__ == "__main__":
                         normalize=normalize,
                     )
             training_config = TrainingConfig(f"SPLIT nr.{SPLIT}")
-            run_training(training_config, metadata, processor, data_paths, SPLIT)
+            training_manager = TrainingManager(training_config)
+            training_manager.run_training(
+                train,
+                data_paths.get_train_dataset_path(SPLIT),
+                val,
+                data_paths.get_val_dataset_path(SPLIT),
+                augment,
+            )
+            training_manager.test_model(test, data_paths.get_test_dataset_path(SPLIT))
     if False:
         # Generate random spectrogram
         spectrogram = spectrogram_generator.generate_spectrogram_by_index(
