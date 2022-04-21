@@ -13,12 +13,12 @@ if __name__ == "__main__":
     metadata = processor.get_metadata()
 
     # Prepare data to disk for 3 different types of splits
-    for split_id in range(1, 4):
+    for split_id in range(2, 3):
         train, val, test = prepare_data(split_id, data_paths, processor, metadata)
 
         default_config = TrainingConfig()
         run_training(
-            f"sample-training-{split_id}",
+            f"sample-training-fixed-lr-{split_id}",
             default_config,
             train,
             data_paths.get_train_dataset_path(split_id),

@@ -3,6 +3,7 @@ import shutil
 import math
 import pandas as pd
 import tensorflow as tf
+from tensorflow.keras import backend as K
 import numpy as np
 import gc
 from typing import Tuple
@@ -105,20 +106,26 @@ def run_training(
         augment: bool,
         overwrite_previous: bool = False
 ) -> None:
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=f"{data_paths.training_log_path}{training_name}")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=f"{data_paths.training_log_path}{training_name}",
+    )
 
     # Protect previous models from overwriting
     if os.path.exists(f"{data_paths.model_path}{training_name}"):
         if overwrite_previous:
             print("WARNING: Model with the same name already exists. Overwriting it...")
-
-            # Clear logs and model directories for previous run
-            shutil.rmtree(f"{data_paths.training_log_path}{training_name}")
             shutil.rmtree(f"{data_paths.model_path}{training_name}")
         else:
             print("ERROR: Model with the same name already exists. Skipping...")
-            print("INFO: To overwrite the model, use the overwrite_previous flag.")
-            return
+            print("INFO: To overwrite the models, use the overwrite_previous flag.")
+
+    if os.path.exists(f"{data_paths.training_log_path}{training_name}"):
+        if overwrite_previous:
+            print("WARNING: Logs with the same name already exists. Overwriting them...")
+            shutil.rmtree(f"{data_paths.training_log_path}{training_name}")
+        else:
+            print("ERROR: Logs with the same name already exists. Skipping...")
+            print("INFO: To overwrite the logs, use the overwrite_previous flag.")
 
     # TODO: dump training config to file and save it to the "./logs/{training_name}"
 
@@ -127,6 +134,9 @@ def run_training(
         loss=training_config.loss,
         metrics=["accuracy"],
     )
+
+    best_loss: float = np.inf
+    not_improved_count: int = 0
 
     # Load all training and validation data into memory
     train_data, train_label = load_data(training_config, training_metadata, training_path, augment)
@@ -137,7 +147,9 @@ def run_training(
     val_label = label_encoder.fit_transform(val_label)
 
     # Every epoch has own data
-    for _ in range(training_config.epochs):
+    for epoch_id in range(training_config.epochs):
+        print(f"Epoch: {epoch_id}")
+
         # Get subarrays for training and validation
         input_data, input_label = prepare_data(
             training_config, train_data, train_label
@@ -149,6 +161,7 @@ def run_training(
         # Shuffle the data
         input_data, input_label = shuffle(input_data, input_label)
         val_input_data, val_input_label = shuffle(val_input_data, val_input_label)
+
         # Split data to parts of size 6400
         # TODO: Find better solution
         if input_data.shape[0] > 6400:
@@ -162,9 +175,11 @@ def run_training(
             input_data = [input_data]
             input_label = [input_label]
 
-        # For each part of data, run model training
-        for i in range(len(input_data)):
-            training_config.model.fit(
+        fits_per_epoch: int = len(input_data)
+
+        # For each part of data, run models training
+        for i in range(fits_per_epoch):
+            epoch_story = training_config.model.fit(
                 input_data[i],
                 input_label[i],
                 epochs=1,
@@ -177,11 +192,27 @@ def run_training(
             # Clear gpu session
             tf.keras.backend.clear_session()
 
-        # Collect garbage to avoid memory leak
-        gc.collect()
+            # Collect garbage to avoid memory leak
+            gc.collect()
 
-    # Save model
-    training_config.model.save(data_paths.model_path + training_name)
+        # Save models after each epoch
+        training_config.model.save(data_paths.model_path + training_name)
+
+        # Update best loss
+        best_loss = min(best_loss, epoch_story.history["loss"][0])
+
+        # If loss is not decreasing since last 3 epochs, reduce learning rate 0.5 times
+        if epoch_story.history["loss"][0] > best_loss:
+            not_improved_count += 1
+
+            if not_improved_count >= training_config.learning_rate_patience:
+                old_lr = training_config.learning_rate
+                training_config.learning_rate *= 0.5
+                not_improved_count = 0
+
+                # Update new learning rate to the optimizer
+                K.set_value(training_config.model.optimizer.learning_rate, training_config.learning_rate)
+                print(f"Epoch: {epoch_id} Reducing lr from {old_lr} to {training_config.learning_rate}")
 
 
 def test_model(
