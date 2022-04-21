@@ -32,10 +32,10 @@ def augment_data(spectrogram: np.ndarray) -> list:
 
 
 def load_data(
-        training_config: TrainingConfig,
-        metadata: pd.DataFrame,
-        path: str,
-        augment: bool = False
+    training_config: TrainingConfig,
+    metadata: pd.DataFrame,
+    path: str,
+    augment: bool = False,
 ) -> Tuple[list, list]:
     """
     Load the data from the given path.
@@ -69,9 +69,7 @@ def load_data(
 
 
 def prepare_data(
-        training_config: TrainingConfig,
-        org_data: list,
-        labels: list
+    training_config: TrainingConfig, org_data: list, labels: list
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Prepare the data for the training. Each data is subarray of the spectrogram of given length.
@@ -83,11 +81,9 @@ def prepare_data(
     input_data = []
     for data in org_data:
         # Find starting point for each data
-        starting_index = np.random.randint(
-            0, data.shape[1] - training_config.input_w
-        )
+        starting_index = np.random.randint(0, data.shape[1] - training_config.input_w)
         input_data.append(
-            data[:, starting_index: starting_index + training_config.input_w]
+            data[:, starting_index : starting_index + training_config.input_w]
         )
     input_data = np.stack(input_data)
     input_label = np.array(labels)
@@ -96,16 +92,16 @@ def prepare_data(
 
 
 def run_training(
-        training_name: str,
-        training_config: TrainingConfig,
-        training_metadata: pd.DataFrame,
-        training_path: str,
-        validation_metadata: pd.DataFrame,
-        validation_path: str,
-        data_paths: DataPathsManager,
-        augment: bool,
-        overwrite_previous: bool = False
+    training_name: str,
+    training_metadata: pd.DataFrame,
+    training_path: str,
+    validation_metadata: pd.DataFrame,
+    validation_path: str,
+    data_paths: DataPathsManager,
+    augment: bool,
+    overwrite_previous: bool = False,
 ) -> None:
+    training_config = TrainingConfig()
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=f"{data_paths.training_log_path}{training_name}",
     )
@@ -121,7 +117,9 @@ def run_training(
 
     if os.path.exists(f"{data_paths.training_log_path}{training_name}"):
         if overwrite_previous:
-            print("WARNING: Logs with the same name already exists. Overwriting them...")
+            print(
+                "WARNING: Logs with the same name already exists. Overwriting them..."
+            )
             shutil.rmtree(f"{data_paths.training_log_path}{training_name}")
         else:
             print("ERROR: Logs with the same name already exists. Skipping...")
@@ -139,8 +137,12 @@ def run_training(
     not_improved_count: int = 0
 
     # Load all training and validation data into memory
-    train_data, train_label = load_data(training_config, training_metadata, training_path, augment)
-    val_data, val_label = load_data(training_config, validation_metadata, validation_path)
+    train_data, train_label = load_data(
+        training_config, training_metadata, training_path, augment
+    )
+    val_data, val_label = load_data(
+        training_config, validation_metadata, validation_path
+    )
 
     # Change labels from string to int
     train_label = label_encoder.fit_transform(train_label)
@@ -151,9 +153,7 @@ def run_training(
         print(f"Epoch: {epoch_id}")
 
         # Get subarrays for training and validation
-        input_data, input_label = prepare_data(
-            training_config, train_data, train_label
-        )
+        input_data, input_label = prepare_data(training_config, train_data, train_label)
         val_input_data, val_input_label = prepare_data(
             training_config, val_data, val_label
         )
@@ -164,12 +164,13 @@ def run_training(
 
         # Split data to parts of size 6400
         # TODO: Find better solution
-        if input_data.shape[0] > 6400:
+        if input_data.shape[0] > training_config.patch_size:
             input_data = np.array_split(
-                input_data, math.ceil(input_data.shape[0] / 6400)
+                input_data, math.ceil(input_data.shape[0] / training_config.patch_size)
             )
             input_label = np.array_split(
-                input_label, math.ceil(input_label.shape[0] / 6400)
+                input_label,
+                math.ceil(input_label.shape[0] / training_config.patch_size),
             )
         else:
             input_data = [input_data]
@@ -190,7 +191,7 @@ def run_training(
             )
 
             # Clear gpu session
-            tf.keras.backend.clear_session()
+            gc.collect()
 
             # Collect garbage to avoid memory leak
             gc.collect()
@@ -211,19 +212,24 @@ def run_training(
                 not_improved_count = 0
 
                 # Update new learning rate to the optimizer
-                K.set_value(training_config.model.optimizer.learning_rate, training_config.learning_rate)
-                print(f"Epoch: {epoch_id} Reducing lr from {old_lr} to {training_config.learning_rate}")
+                K.set_value(
+                    training_config.model.optimizer.learning_rate,
+                    training_config.learning_rate,
+                )
+                print(
+                    f"Epoch: {epoch_id} Reducing lr from {old_lr} to {training_config.learning_rate}"
+                )
 
 
 def test_model(
-        training_config: TrainingConfig,
-        test_metadata: pd.DataFrame,
-        test_path: str
+    training_config: TrainingConfig, test_metadata: pd.DataFrame, test_path: str
 ) -> None:
     # Load test data
     test_data, test_label = load_data(training_config, test_metadata, test_path)
     test_label = label_encoder.fit_transform(test_label)
-    test_input_data, test_input_label = prepare_data(training_config, test_data, test_label)
+    test_input_data, test_input_label = prepare_data(
+        training_config, test_data, test_label
+    )
 
     # Shuffle and run test data
     test_input_data, test_input_label = shuffle(test_input_data, test_input_label)

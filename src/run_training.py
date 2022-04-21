@@ -6,6 +6,7 @@ from training.training_config import TrainingConfig
 from training.training_manager import run_training
 
 from prepare_data import prepare_data
+import multiprocessing
 
 if __name__ == "__main__":
     data_paths = DataPathsManager()
@@ -16,15 +17,18 @@ if __name__ == "__main__":
     for split_id in range(2, 3):
         train, val, test = prepare_data(split_id, data_paths, processor, metadata)
 
-        default_config = TrainingConfig()
-        run_training(
-            f"sample-training-fixed-lr-{split_id}",
-            default_config,
-            train,
-            data_paths.get_train_dataset_path(split_id),
-            val,
-            data_paths.get_val_dataset_path(split_id),
-            data_paths,
-            augment=True,
-            overwrite_previous=True
+        p = multiprocessing.Process(
+            target=run_training,
+            args=(
+                f"sample-training-{split_id}",
+                train,
+                data_paths.get_train_dataset_path(split_id),
+                val,
+                data_paths.get_val_dataset_path(split_id),
+                data_paths,
+                split_id != 1,
+                True,
+            ),
         )
+        p.start()
+        p.join()

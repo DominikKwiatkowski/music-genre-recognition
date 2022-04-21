@@ -21,16 +21,20 @@ class TrainingConfig:
         )
 
         # Loss function
-        self.loss: tf.keras.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+        self.loss: tf.keras.loss = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=False
+        )
 
         # Input shape
         self.input_h = 128  # Always 128
-        self.input_w = (
-            512  # Corresponds to the track's length; 512 is around 6 seconds
-        )
-
+        self.input_w = 512  # Corresponds to the track's length; 512 is around 6 seconds
+        self.patch_size = 3276800 / self.input_w  # size which can be allocated on GPU
         # Mode layers definition
-        self.model = multi_scale_level_cnn((self.input_h, self.input_w, 1),
-                                           num_dense_blocks=3, num_conv_filters=32, num_classes=8)
+        self.model = multi_scale_level_cnn(
+            (self.input_h, self.input_w, 1),
+            num_dense_blocks=3,
+            num_conv_filters=32,
+            num_classes=8,
+        )
 
         self.model.summary()
