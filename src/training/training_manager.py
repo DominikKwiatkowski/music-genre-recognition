@@ -159,6 +159,10 @@ def run_training(
     train_label = label_encoder.fit_transform(train_label)
     val_label = label_encoder.fit_transform(val_label)
 
+    np.save(
+        data_paths.model_path + training_name + "label_encoder.npy",
+        label_encoder.classes_,
+    )
     # Every epoch has own data
     for epoch_id in range(training_config.starting_epoch, training_config.epochs):
         print(f"Epoch: {epoch_id}")
@@ -206,18 +210,19 @@ def run_training(
             gc.collect()
 
         # Save models after each epoch
-        training_config.model.save(
-            data_paths.model_path + training_name + str(epoch_id)
+        training_config.model.save_weights(
+            data_paths.model_path + training_name + str(epoch_id) + ".h5"
         )
 
-        tm.test_model_training(
-            training_name,
-            training_config,
-            data_paths,
-            test_metadata,
-            test_path,
-            epoch_id,
-        )
+        # Test model on training data(debug only)
+        # tm.test_model_training(
+        #     training_name,
+        #     training_config,
+        #     data_paths,
+        #     test_metadata,
+        #     test_path,
+        #     epoch_id,
+        # )
         # Update best loss
         best_loss = min(best_loss, epoch_story.history["loss"][0])
 

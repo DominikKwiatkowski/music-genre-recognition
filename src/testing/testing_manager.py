@@ -59,7 +59,7 @@ def log_confusion_matrix(
         logdir=f"{data_paths.training_log_path}{training_name}"
     )
     with w.as_default():
-        tf.summary.image("Confusion Matrix", image, step=step)
+        tf.summary.image("Confusion Matrix" + str(step), image, step=step)
     gc.collect()
 
 
@@ -95,14 +95,19 @@ def test_model_training(
 
 def test_model(
     model_name: str,
+    model_id: str,
     data_paths: DataPathsManager,
     test_metadata: pd.DataFrame,
     test_path: str,
     step: int,
 ) -> None:
     training_config = TrainingConfig()
-
-    training_config.model = keras.models.load_model(data_paths.model_path + model_name)
+    encoder = preprocessing.LabelEncoder()
+    training_config.model.load_weights(
+        data_paths.model_path + model_name + model_id + ".h5"
+    )
+    encoder.classes_ = np.load(data_paths.model_path + model_name + "label_encoder.npy")
+    training_config.model.summary()
     # Load test data
     test_data, test_label = tm.load_data(training_config, test_metadata, test_path)
     test_label = tm.label_encoder.fit_transform(test_label)
@@ -113,5 +118,10 @@ def test_model(
     # Shuffle and run test data
     test_input_data, test_input_label = shuffle(test_input_data, test_input_label)
     log_confusion_matrix(
-        training_config, test_input_data, test_input_label, model_name, data_paths, step
+        training_config,
+        test_input_data,
+        test_input_label,
+        "test_mode" + model_name,
+        data_paths,
+        step,
     )

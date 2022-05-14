@@ -12,10 +12,16 @@ if __name__ == "__main__":
     processor = MetadataProcessor()
     metadata = processor.get_metadata()
 
-    split_id = 1
+    split_id = 2
+    model_id = "99"
     # Prepare data to disk for 3 different types of splits
-    model_path = "sample-training-check-243"
+    model_path = "sample-training-check-2"
     train, val, test = prepare_data(split_id, data_paths, processor, metadata)
     test_model(
-        model_path, data_paths, test, data_paths.get_test_dataset_path(split_id), 1
+        model_path,
+        model_id,
+        data_paths,
+        test,
+        data_paths.get_test_dataset_path(split_id),
+        1,
     )
