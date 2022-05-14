@@ -23,6 +23,7 @@ class TrainingConfig:
         self.num_classes: int = 8
 
         # Number of epochs to train for
+        self.starting_epoch: int = 0
         self.epochs: int = 100
 
         # Learning rate
@@ -51,16 +52,16 @@ class TrainingConfig:
         self.patch_size = 3276800 / self.input_w  # size which can be allocated on GPU
 
         # Mode layers definition
-        self.model = multi_scale_level_cnn(
-            (self.input_h, self.input_w, 1),
-            num_dense_blocks=4,
-            num_conv_filters=32,
-            num_classes=self.num_classes,
-        )
-
-        # self.model = dumb_model(
+        # self.model = multi_scale_level_cnn(
         #     (self.input_h, self.input_w, 1),
+        #     num_dense_blocks=3,
+        #     num_conv_filters=32,
         #     num_classes=self.num_classes,
         # )
+
+        self.model = dumb_model(
+            (self.input_h, self.input_w, 1),
+            num_classes=self.num_classes,
+        )
 
         self.model.summary()

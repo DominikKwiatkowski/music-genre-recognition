@@ -8,11 +8,11 @@ from src.data_process import spectrogram_generator
 
 
 def prepare_data(
-        split_id: int,
-        data_paths: DataPathsManager,
-        metadata_processor: MetadataProcessor,
-        metadata: pd.DataFrame,
-        show_plots: bool = False
+    split_id: int,
+    data_paths: DataPathsManager,
+    metadata_processor: MetadataProcessor,
+    metadata: pd.DataFrame,
+    show_plots: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     For given split type, split and save data to disk.
@@ -24,9 +24,7 @@ def prepare_data(
     :return: None
     """
     if split_id == 1:
-        train, val, test = metadata_processor.split_metadata(
-            metadata, 0.8, 0.1, 0.1
-        )
+        train, val, test = metadata_processor.split_metadata(metadata, 0.8, 0.1, 0.1)
         normalize = False
     elif split_id == 2:
         train, val, test = metadata_processor.split_metadata_uniform(
@@ -50,9 +48,9 @@ def prepare_data(
 
     # Prepare dataset and generate spectrogram
     for dataset_metadata, path in (
-            (train, data_paths.get_train_dataset_path(split_id)),
-            (val, data_paths.get_val_dataset_path(split_id)),
-            (test, data_paths.get_test_dataset_path(split_id)),
+        (train, data_paths.get_train_dataset_path(split_id)),
+        (val, data_paths.get_val_dataset_path(split_id)),
+        (test, data_paths.get_test_dataset_path(split_id)),
     ):
         if not os.path.exists(path):
             spectrogram_generator.generate_all_spectrograms(

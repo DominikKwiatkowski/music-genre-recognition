@@ -19,11 +19,13 @@ if __name__ == "__main__":
         train, val, test = prepare_data(split_id, data_paths, processor, metadata)
 
         run_training(
-            f"sample-training-larger-model-{split_id}",
+            f"sample-training-check-{split_id}",
             train,
             data_paths.get_train_dataset_path(split_id),
             val,
             data_paths.get_val_dataset_path(split_id),
+            test,
+            data_paths.get_test_dataset_path(split_id),
             data_paths,
             augment=True,
             overwrite_previous=True
@@ -35,6 +37,8 @@ if __name__ == "__main__":
         #     data_paths.get_train_dataset_path(split_id),
         #     val,
         #     data_paths.get_val_dataset_path(split_id),
+        #     test,
+        #     data_paths.get_test_dataset_path(split_id),
         #     data_paths,
         #     augment=True,
         #     overwrite_previous=True
@@ -43,11 +47,13 @@ if __name__ == "__main__":
         # p = multiprocessing.Process(
         #     target=run_training,
         #     args=(
-        #         f"sample-training-fixed-lr-{split_id}",
+        #         f"sample-training-{split_id}",
         #         train,
         #         data_paths.get_train_dataset_path(split_id),
         #         val,
         #         data_paths.get_val_dataset_path(split_id),
+        #         test,
+        #         data_paths.get_test_dataset_path(split_id),
         #         data_paths,
         #         split_id != 1,
         #         True,

@@ -3,7 +3,8 @@ import shutil
 import math
 import pandas as pd
 import tensorflow as tf
-
+from tensorflow import keras
+from tensorflow.keras import backend as K
 import numpy as np
 import gc
 from typing import Tuple
@@ -15,9 +16,9 @@ import time
 from src.data_process.config_paths import DataPathsManager
 from src.training.training_config import TrainingConfig
 from src.data_process.spectrogram_augmenter import noise_overlay, mask_spectrogram
+import src.testing.testing_manager as tm
 from training.LrTweaker import LrTweaker
 from training.training_data_generator import get_datasets
-from tensorflow.keras import backend as K
 
 label_encoder = preprocessing.LabelEncoder()
 
@@ -127,7 +128,9 @@ def load_data(
 
 
 def prepare_data(
-        training_config: TrainingConfig, org_data: list, labels: list
+        training_config: TrainingConfig,
+        org_data: list,
+        labels: list
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Prepare the data for the training. Each data is subarray of the spectrogram of given length.
@@ -155,9 +158,12 @@ def run_training(
         training_path: str,
         validation_metadata: pd.DataFrame,
         validation_path: str,
+        test_metadata: pd.DataFrame,
+        test_path: str,
         data_paths: DataPathsManager,
         augment: bool,
         overwrite_previous: bool = False,
+        resume: bool = False,
 ) -> None:
     """
     Run the training.
@@ -166,9 +172,12 @@ def run_training(
     :param training_path: Path to the training data
     :param validation_metadata: Metadata of the validation data
     :param validation_path: Path to the validation data
+    :param test_metadata: Metadata of the test data
+    :param test_path: Path to the test data
     :param data_paths: Paths to the data
     :param augment: Augment the data
     :param overwrite_previous: Overwrite previous training
+    :param resume: Resume training
     :return:
     """
     training_config = TrainingConfig()
@@ -202,12 +211,15 @@ def run_training(
     training_config.model.compile(
         optimizer=training_config.optimizer,
         loss=training_config.loss,
-        metrics=[
-            "accuracy",
-            # tf.keras.metrics.Precision(),
-            # tf.keras.metrics.Recall()
-        ]
+        metrics=["accuracy", "mse", "mae"],
     )
+    # load model if resume
+    if resume:
+        training_config.model = keras.models.load_model(
+            data_paths.model_path
+            + training_name
+            + str(training_config.starting_epoch - 1)
+        )
 
     # Load all training and validation data into memory
     train_data, train_label = load_data(
@@ -231,7 +243,7 @@ def run_training(
     gc.collect()
 
     # Every epoch has own data
-    for epoch_id in range(training_config.epochs):
+    for epoch_id in range(training_config.starting_epoch, training_config.epochs):
         eta = calculate_eta(epoch_id, training_config.epochs, training_start_time)
         print(f"Epoch: {epoch_id}/{training_config.epochs}. ETA: {eta}")
 
@@ -265,7 +277,8 @@ def run_training(
             epoch_story = training_config.model.fit(
                 input_data[i],
                 input_label[i],
-                epochs=1,
+                initial_epoch=epoch_id,
+                epochs=epoch_id + 1,
                 batch_size=training_config.batch_size,
                 validation_data=(val_input_data, val_input_label),
                 shuffle=True,
@@ -282,7 +295,18 @@ def run_training(
             gc.collect()
 
         # Save models after each epoch
-        training_config.model.save(data_paths.model_path + training_name)
+        training_config.model.save(
+            data_paths.model_path + training_name + str(epoch_id)
+        )
+
+        tm.test_model_training(
+            training_name,
+            training_config,
+            data_paths,
+            test_metadata,
+            test_path,
+            epoch_id
+        )
 
 
 def run_training_new(
@@ -291,6 +315,8 @@ def run_training_new(
         training_path: str,
         validation_metadata: pd.DataFrame,
         validation_path: str,
+        test_metadata: pd.DataFrame,
+        test_path: str,
         data_paths: DataPathsManager,
         augment: bool,
         overwrite_previous: bool = False,
@@ -332,9 +358,7 @@ def run_training_new(
     )
 
     prepare_output_dirs(data_paths.model_path, data_paths.training_log_path, training_name, overwrite_previous)
-
     # TODO: dump training config to file and save it to the "./logs/{training_name}"
-
     training_config.model.compile(
         optimizer=training_config.optimizer,
         loss=training_config.loss,

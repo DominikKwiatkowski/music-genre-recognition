@@ -57,9 +57,7 @@ def get_signal(file_path: str) -> np.ndarray:
 
 
 def get_signal_by_index(
-        dataset_path: str,
-        metadata: pd.DataFrame,
-        index: int
+    dataset_path: str, metadata: pd.DataFrame, index: int
 ) -> np.ndarray:
     """
     Loads signal from file.
@@ -116,8 +114,7 @@ def normalize_spectrogram(spectrogram: np.ndarray) -> np.ndarray:
 
 
 def generate_random_spectrogram(
-        dataset_path: str,
-        metadata: pd.DataFrame
+    dataset_path: str, metadata: pd.DataFrame
 ) -> np.ndarray:
     """
     Creates spectrogram for random file in the dataset.
@@ -132,9 +129,7 @@ def generate_random_spectrogram(
 
 
 def generate_spectrogram_by_index(
-        dataset_path: str,
-        metadata: pd.DataFrame,
-        index: int
+    dataset_path: str, metadata: pd.DataFrame, index: int
 ) -> np.ndarray:
     """
     Creates spectrogram for file in the dataset.
@@ -151,10 +146,7 @@ def generate_spectrogram_by_index(
 
 
 def generate_all_spectrograms(
-        dataset_path: str,
-        metadata: pd.DataFrame,
-        save_path: str,
-        normalize: bool
+    dataset_path: str, metadata: pd.DataFrame, save_path: str, normalize: bool
 ) -> None:
     """
     Create spectrograms for all files in the dataset and save them to disk
@@ -169,7 +161,9 @@ def generate_all_spectrograms(
         os.makedirs(save_path)
 
     # Generate and save spectrogram
-    with alive_bar(len(metadata), title=f"Preparing spectrograms for {save_path}") as bar:
+    with alive_bar(
+        len(metadata), title=f"Preparing spectrograms for {save_path}"
+    ) as bar:
         for index in range(len(metadata)):
             try:
                 file_path = index_to_file_path(dataset_path, metadata, index)
