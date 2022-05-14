@@ -138,5 +138,5 @@ dmypy.json
 # Data
 data/
 # Data from training
-training/
-models/
+/training/
+/models/

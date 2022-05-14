@@ -32,7 +32,7 @@ if __name__ == "__main__":
         )
 
         # run_training_new(
-        #     f"sample-training-changed-augment-{split_id}",
+        #     f"sample-training-new-{split_id}",
         #     train,
         #     data_paths.get_train_dataset_path(split_id),
         #     val,

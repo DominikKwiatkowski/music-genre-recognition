@@ -358,7 +358,9 @@ def run_training_new(
     )
 
     prepare_output_dirs(data_paths.model_path, data_paths.training_log_path, training_name, overwrite_previous)
+
     # TODO: dump training config to file and save it to the "./logs/{training_name}"
+
     training_config.model.compile(
         optimizer=training_config.optimizer,
         loss=training_config.loss,
