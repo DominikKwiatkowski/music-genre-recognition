@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import mixed_precision
+from tensorflow.keras import initializers
 
 from models.multi_scale_level_cnn import multi_scale_level_cnn
 from models.dumb import dumb_model
@@ -51,17 +52,26 @@ class TrainingConfig:
         self.input_w = 512  # Corresponds to the track's length; 512 is around 6 seconds
         self.patch_size = 3276800 / self.input_w  # size which can be allocated on GPU
 
+        self.default_weights_initializer = initializers.RandomNormal(
+            mean=0.0, stddev=0.05, seed=None
+        )
+        # self.default_weights_initializer = initializers.VarianceScaling(
+        #     scale=0.1, mode='fan_in', distribution='uniform'
+        # )
+
         # Mode layers definition
         # self.model = multi_scale_level_cnn(
         #     (self.input_h, self.input_w, 1),
         #     num_dense_blocks=3,
         #     num_conv_filters=32,
         #     num_classes=self.num_classes,
+        #     initializer=self.default_weights_initializer
         # )
 
         self.model = dumb_model(
             (self.input_h, self.input_w, 1),
             num_classes=self.num_classes,
+            initializer=self.default_weights_initializer
         )
 
         self.model.summary()
