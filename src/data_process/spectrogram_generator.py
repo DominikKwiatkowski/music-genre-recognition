@@ -101,7 +101,7 @@ def generate_spectrogram(file_path: str) -> np.ndarray:
     mel_scale_sgram = librosa.feature.melspectrogram(
         S=sgram_mag, sr=sample_rate, power=1
     )
-    mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.max)
+    mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.min)
 
     return mel_sgram
 

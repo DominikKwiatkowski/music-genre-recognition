@@ -3,18 +3,75 @@ import shutil
 import math
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import backend as K
+
 import numpy as np
 import gc
 from typing import Tuple
 from sklearn import preprocessing
 from sklearn.utils import shuffle
+import datetime
+import time
 
 from src.data_process.config_paths import DataPathsManager
 from src.training.training_config import TrainingConfig
 from src.data_process.spectrogram_augmenter import noise_overlay, mask_spectrogram
+from training.LrTweaker import LrTweaker
+from training.training_data_generator import get_datasets
+from tensorflow.keras import backend as K
 
 label_encoder = preprocessing.LabelEncoder()
+
+
+def calculate_eta(curr_step: int, total_steps: int, start_time: float) -> str:
+    """
+    Calculate the time left for the process.
+    :param curr_step: Current step
+    :param total_steps: Total steps
+    :param start_time: Start time
+    :return: Time left for the training as string.
+    """
+
+    if curr_step == 0:
+        return "ETA:  --:--:--"
+
+    time_left = (total_steps - curr_step) * (time.time() - start_time) / curr_step
+    return str(datetime.timedelta(seconds=time_left))
+
+
+def prepare_output_dirs(
+        model_path: str,
+        training_log_path: str,
+        training_name: str,
+        overwrite_previous: bool
+) -> None:
+    """
+    Prepare the output directories for the training.
+    :param model_path: Path to the model
+    :param training_log_path: Path to the training log
+    :param training_name: Name of the training
+    :param overwrite_previous: Overwrite previous training
+    :return:
+    """
+
+    if os.path.exists(f"{model_path}{training_name}"):
+        if overwrite_previous:
+            print("WARNING: Model with the same name already exists. Overwriting it...")
+            shutil.rmtree(f"{model_path}{training_name}")
+        else:
+            print("ERROR: Model with the same name already exists. Skipping...")
+            print("INFO: To overwrite the models, use the overwrite_previous flag.")
+            return
+
+    if os.path.exists(f"{training_log_path}{training_name}"):
+        if overwrite_previous:
+            print(
+                "WARNING: Logs with the same name already exists. Overwriting them..."
+            )
+            shutil.rmtree(f"{training_log_path}{training_name}")
+        else:
+            print("ERROR: Logs with the same name already exists. Skipping...")
+            print("INFO: To overwrite the logs, use the overwrite_previous flag.")
+            return
 
 
 def augment_data(spectrogram: np.ndarray) -> list:
@@ -24,18 +81,19 @@ def augment_data(spectrogram: np.ndarray) -> list:
     :return: Augmented data
     """
     result = [
-        mask_spectrogram(spectrogram, n_freq_masks=1, n_time_masks=1),
-        noise_overlay(spectrogram),
+        mask_spectrogram(spectrogram, n_freq_masks=1, n_time_masks=0),
+        # mask_spectrogram(spectrogram, n_freq_masks=3, n_time_masks=0),
+        noise_overlay(spectrogram, noise_pct=0.7, noise_amt=0.05),
     ]
 
     return result
 
 
 def load_data(
-    training_config: TrainingConfig,
-    metadata: pd.DataFrame,
-    path: str,
-    augment: bool = False,
+        training_config: TrainingConfig,
+        metadata: pd.DataFrame,
+        path: str,
+        augment: bool = False,
 ) -> Tuple[list, list]:
     """
     Load the data from the given path.
@@ -69,7 +127,7 @@ def load_data(
 
 
 def prepare_data(
-    training_config: TrainingConfig, org_data: list, labels: list
+        training_config: TrainingConfig, org_data: list, labels: list
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Prepare the data for the training. Each data is subarray of the spectrogram of given length.
@@ -83,7 +141,7 @@ def prepare_data(
         # Find starting point for each data
         starting_index = np.random.randint(0, data.shape[1] - training_config.input_w)
         input_data.append(
-            data[:, starting_index : starting_index + training_config.input_w]
+            data[:, starting_index: starting_index + training_config.input_w]
         )
     input_data = np.stack(input_data)
     input_label = np.array(labels)
@@ -92,49 +150,64 @@ def prepare_data(
 
 
 def run_training(
-    training_name: str,
-    training_metadata: pd.DataFrame,
-    training_path: str,
-    validation_metadata: pd.DataFrame,
-    validation_path: str,
-    data_paths: DataPathsManager,
-    augment: bool,
-    overwrite_previous: bool = False,
+        training_name: str,
+        training_metadata: pd.DataFrame,
+        training_path: str,
+        validation_metadata: pd.DataFrame,
+        validation_path: str,
+        data_paths: DataPathsManager,
+        augment: bool,
+        overwrite_previous: bool = False,
 ) -> None:
+    """
+    Run the training.
+    :param training_name: Name of the training
+    :param training_metadata: Metadata of the training data
+    :param training_path: Path to the training data
+    :param validation_metadata: Metadata of the validation data
+    :param validation_path: Path to the validation data
+    :param data_paths: Paths to the data
+    :param augment: Augment the data
+    :param overwrite_previous: Overwrite previous training
+    :return:
+    """
     training_config = TrainingConfig()
+
+    # Setup callbacks
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=f"{data_paths.training_log_path}{training_name}",
+        update_freq='epoch'
     )
 
-    # Protect previous models from overwriting
-    if os.path.exists(f"{data_paths.model_path}{training_name}"):
-        if overwrite_previous:
-            print("WARNING: Model with the same name already exists. Overwriting it...")
-            shutil.rmtree(f"{data_paths.model_path}{training_name}")
-        else:
-            print("ERROR: Model with the same name already exists. Skipping...")
-            print("INFO: To overwrite the models, use the overwrite_previous flag.")
+    # Learning rate tweaker which decreases the learning rate if loss is not decreasing
+    lr_tweaker = LrTweaker(
+        training_config,
+        patience=training_config.learning_rate_patience,
+        decrease_multiplier=training_config.learning_rate_decrease_multiplier,
+        min_lr=training_config.learning_rate_min
+    )
 
-    if os.path.exists(f"{data_paths.training_log_path}{training_name}"):
-        if overwrite_previous:
-            print(
-                "WARNING: Logs with the same name already exists. Overwriting them..."
-            )
-            shutil.rmtree(f"{data_paths.training_log_path}{training_name}")
-        else:
-            print("ERROR: Logs with the same name already exists. Skipping...")
-            print("INFO: To overwrite the logs, use the overwrite_previous flag.")
+    # Dummy ReduceLROnPlateau which is bugged and doesn't work, but is good to display learning rate with verbose
+    dummy_lr = tf.keras.callbacks.ReduceLROnPlateau(
+        monitor='loss',
+        factor=training_config.learning_rate_decrease_multiplier,
+        patience=training_config.learning_rate_patience,
+        min_lr=training_config.learning_rate_min,
+    )
+
+    prepare_output_dirs(data_paths.model_path, data_paths.training_log_path, training_name, overwrite_previous)
 
     # TODO: dump training config to file and save it to the "./logs/{training_name}"
 
     training_config.model.compile(
         optimizer=training_config.optimizer,
         loss=training_config.loss,
-        metrics=["accuracy"],
+        metrics=[
+            "accuracy",
+            # tf.keras.metrics.Precision(),
+            # tf.keras.metrics.Recall()
+        ]
     )
-
-    best_loss: float = np.inf
-    not_improved_count: int = 0
 
     # Load all training and validation data into memory
     train_data, train_label = load_data(
@@ -148,9 +221,19 @@ def run_training(
     train_label = label_encoder.fit_transform(train_label)
     val_label = label_encoder.fit_transform(val_label)
 
+    # Epoch ETA estimator
+    training_start_time = time.time()
+
+    # Clear gpu session
+    tf.keras.backend.clear_session()
+
+    # Collect garbage to avoid memory leak
+    gc.collect()
+
     # Every epoch has own data
     for epoch_id in range(training_config.epochs):
-        print(f"Epoch: {epoch_id}")
+        eta = calculate_eta(epoch_id, training_config.epochs, training_start_time)
+        print(f"Epoch: {epoch_id}/{training_config.epochs}. ETA: {eta}")
 
         # Get subarrays for training and validation
         input_data, input_label = prepare_data(training_config, train_data, train_label)
@@ -162,8 +245,7 @@ def run_training(
         input_data, input_label = shuffle(input_data, input_label)
         val_input_data, val_input_label = shuffle(val_input_data, val_input_label)
 
-        # Split data to parts of size 6400
-        # TODO: Find better solution
+        # Split data to parts of equal size
         if input_data.shape[0] > training_config.patch_size:
             input_data = np.array_split(
                 input_data, math.ceil(input_data.shape[0] / training_config.patch_size)
@@ -187,11 +269,14 @@ def run_training(
                 batch_size=training_config.batch_size,
                 validation_data=(val_input_data, val_input_label),
                 shuffle=True,
-                callbacks=tensorboard_callback,
+                callbacks=[tensorboard_callback, dummy_lr],
             )
 
+            # Tweak model's learning rate
+            lr_tweaker.on_epoch_end(epoch_story.history["loss"][0])
+
             # Clear gpu session
-            gc.collect()
+            tf.keras.backend.clear_session()
 
             # Collect garbage to avoid memory leak
             gc.collect()
@@ -199,30 +284,83 @@ def run_training(
         # Save models after each epoch
         training_config.model.save(data_paths.model_path + training_name)
 
-        # Update best loss
-        best_loss = min(best_loss, epoch_story.history["loss"][0])
 
-        # If loss is not decreasing since last 3 epochs, reduce learning rate 0.5 times
-        if epoch_story.history["loss"][0] > best_loss:
-            not_improved_count += 1
+def run_training_new(
+        training_name: str,
+        training_metadata: pd.DataFrame,
+        training_path: str,
+        validation_metadata: pd.DataFrame,
+        validation_path: str,
+        data_paths: DataPathsManager,
+        augment: bool,
+        overwrite_previous: bool = False,
+) -> None:
+    """
+    Run the training.
+    :param training_name: Name of the training
+    :param training_metadata: Metadata of the training data
+    :param training_path: Path to the training data
+    :param validation_metadata: Metadata of the validation data
+    :param validation_path: Path to the validation data
+    :param data_paths: Paths to the data
+    :param augment: Augment the data
+    :param overwrite_previous: Overwrite previous training
+    :return:
+    """
+    training_config = TrainingConfig()
 
-            if not_improved_count >= training_config.learning_rate_patience:
-                old_lr = training_config.learning_rate
-                training_config.learning_rate *= 0.5
-                not_improved_count = 0
+    training_dataset, validation_dataset = get_datasets(
+        training_config,
+        training_metadata,
+        training_path,
+        validation_metadata,
+        validation_path,
+    )
 
-                # Update new learning rate to the optimizer
-                K.set_value(
-                    training_config.model.optimizer.learning_rate,
-                    training_config.learning_rate,
-                )
-                print(
-                    f"Epoch: {epoch_id} Reducing lr from {old_lr} to {training_config.learning_rate}"
-                )
+    # Setup callbacks
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=f"{data_paths.training_log_path}{training_name}",
+        update_freq='epoch'
+    )
+
+    # Learning rate tweaker which decreases the learning rate if loss is not decreasing
+    lr_tweaker = tf.keras.callbacks.ReduceLROnPlateau(
+        monitor='loss',
+        factor=training_config.learning_rate_decrease_multiplier,
+        patience=training_config.learning_rate_patience,
+        min_lr=training_config.learning_rate_min,
+    )
+
+    prepare_output_dirs(data_paths.model_path, data_paths.training_log_path, training_name, overwrite_previous)
+
+    # TODO: dump training config to file and save it to the "./logs/{training_name}"
+
+    training_config.model.compile(
+        optimizer=training_config.optimizer,
+        loss=training_config.loss,
+        metrics=["accuracy"],
+    )
+
+    training_config.model.fit(
+        training_dataset,
+        epochs=training_config.epochs,
+        batch_size=training_config.batch_size,
+        validation_data=validation_dataset,
+        shuffle=True,
+        callbacks=[tensorboard_callback, lr_tweaker],
+    )
+
+    # Clear gpu session
+    tf.keras.backend.clear_session()
+
+    # Collect garbage to avoid memory leak
+    gc.collect()
 
 
 def test_model(
-    training_config: TrainingConfig, test_metadata: pd.DataFrame, test_path: str
+        training_config: TrainingConfig,
+        test_metadata: pd.DataFrame,
+        test_path: str
 ) -> None:
     # Load test data
     test_data, test_label = load_data(training_config, test_metadata, test_path)
