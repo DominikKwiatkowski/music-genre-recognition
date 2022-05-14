@@ -1,7 +1,6 @@
 import ast
 import os
 from typing import Tuple
-
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -76,7 +75,7 @@ class MetadataProcessor:
         # Get dataset specific metadata for tracks
         subsetMetadata = trackMetadata[
             trackMetadata["set", "subset"] <= self.data_paths.datasetName
-        ]
+            ]
 
         # Change metadata scope to genre information only
         subsetMetadata = subsetMetadata["track"]["genre_top"]
@@ -99,12 +98,17 @@ class MetadataProcessor:
         return metadata
 
     @staticmethod
-    def plot_metadata_distribution(metadata: pd.DataFrame, title: str) -> None:
+    def plot_genres_distribution(
+            metadata: pd.DataFrame,
+            title: str
+    ) -> None:
         """
-        Plots the data set.
+        Plot distribution of genres in the metadata set.
+        :param metadata: metadata set
+        :param title: title of the plot
         :return:
         """
-        # show genre count plot
+
         print(metadata["genre_top"].value_counts())
         metadata["genre_top"].value_counts().plot(
             kind="pie", autopct="%1.1f%%", shadow=True
@@ -113,12 +117,19 @@ class MetadataProcessor:
         plt.show()
 
     @staticmethod
-    def plot_train_val_test_counts(
-        train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame
+    def plot_sizes(
+            train: pd.DataFrame,
+            val: pd.DataFrame,
+            test: pd.DataFrame
     ) -> None:
         """
-        Plots each dataset count on bar diagram
+        Plot each dataset count on bar diagram.
+        :param train: train set
+        :param val: validation set
+        :param test: test set
+        :return:
         """
+
         plt.figure(figsize=(10, 5))
         plt.bar(["Train", "Validation", "Test"], [len(train), len(val), len(test)])
         plt.title("Dataset count")
@@ -126,10 +137,10 @@ class MetadataProcessor:
 
     @staticmethod
     def split_metadata(
-        metadata: pd.DataFrame,
-        train_ratio: float = 0.8,
-        val_ratio: float = 0,
-        test_ratio: float = 0,
+            metadata: pd.DataFrame,
+            train_ratio: float = 0.8,
+            val_ratio: float = 0,
+            test_ratio: float = 0,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Splits the metadata set into train, validation and test sets.
@@ -158,11 +169,11 @@ class MetadataProcessor:
 
     @staticmethod
     def split_metadata_uniform(
-        metadata: pd.DataFrame,
-        train_ratio: float = 0.8,
-        val_ratio: float = 0,
-        test_ratio: float = 0,
-        add_val_to_train: bool = False,
+            metadata: pd.DataFrame,
+            train_ratio: float = 0.8,
+            val_ratio: float = 0,
+            test_ratio: float = 0,
+            add_val_to_train: bool = False,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Splits the metadata set into train, validation and test sets uniformly

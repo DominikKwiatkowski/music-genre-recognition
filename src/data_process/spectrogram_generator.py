@@ -5,6 +5,7 @@ import librosa.display
 import numpy as np
 import pandas as pd
 import torch
+from alive_progress import alive_bar
 
 default_sample_rate = 44100
 
@@ -98,7 +99,7 @@ def generate_spectrogram(file_path: str) -> np.ndarray:
     mel_scale_sgram = librosa.feature.melspectrogram(
         S=sgram_mag, sr=sample_rate, power=1
     )
-    mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.max)
+    mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.min)
 
     return mel_sgram
 
@@ -132,10 +133,13 @@ def generate_spectrogram_by_index(
 ) -> np.ndarray:
     """
     Creates spectrogram for file in the dataset.
+    :param dataset_path: path to the dataset
+    :param metadata: metadata of the dataset
+    :param index: index of the track
     :return: Spectrogram
     """
 
-    # Generate file path
+    # Generate file path from index
     file_path = index_to_file_path(dataset_path, metadata, index)
 
     return generate_spectrogram(file_path)
@@ -157,12 +161,20 @@ def generate_all_spectrograms(
         os.makedirs(save_path)
 
     # Generate and save spectrogram
-    for index in range(len(metadata)):
-        file_path = index_to_file_path(dataset_path, metadata, index)
-        spectrogram = generate_spectrogram(file_path)
-        if normalize:
-            spectrogram = normalize_spectrogram(spectrogram)
+    with alive_bar(
+        len(metadata), title=f"Preparing spectrograms for {save_path}"
+    ) as bar:
+        for index in range(len(metadata)):
+            try:
+                file_path = index_to_file_path(dataset_path, metadata, index)
+                spectrogram = generate_spectrogram(file_path)
+                if normalize:
+                    spectrogram = normalize_spectrogram(spectrogram)
 
-        filename = str(metadata.iloc[index]["track_id"])
-        save_file_path = os.path.join(save_path, filename)
-        np.save(save_file_path, spectrogram)
+                filename = str(metadata.iloc[index]["track_id"])
+                save_file_path = os.path.join(save_path, filename)
+                np.save(save_file_path, spectrogram)
+            except TypeError:
+                print(f"Error generating spectrogram for file {index}")
+
+            bar()

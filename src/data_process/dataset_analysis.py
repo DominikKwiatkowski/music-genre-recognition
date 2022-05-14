@@ -174,8 +174,8 @@ def get_genres_distances(metadata: pd.DataFrame, data_path: str) -> Dict[str, Di
 
                 # Check if shape is higher than genre_avg, if so, cut
                 spectrogram = spectrogram[
-                    : spectrogram_shape[0], : spectrogram_shape[1]
-                ]
+                              : spectrogram_shape[0], : spectrogram_shape[1]
+                              ]
                 genre_avg += spectrogram / len(genre_metadata)
             except RuntimeError:
                 print("Error in track: " + str(metadata_sorted.iloc[track]["track_id"]))
@@ -280,3 +280,36 @@ def plot_avg_tracks_per_artist_by_genre() -> None:
     plt.ylabel("Number of artists by genre")
     plt.tight_layout()
     plt.show()
+
+
+def validate_shape():
+    """
+    Validate the shape of the spectrograms.
+    """
+
+    noise_name_5s = "noise5s.wav"
+    noise_name_10s = "noise10s.wav"
+    noise_name_20s = "noise20s.wav"
+
+    noise_name_512w = "noise512w.wav"
+
+    generate_noise_wav(noise_name_5s, 5)
+    generate_noise_wav(noise_name_10s, 10)
+    generate_noise_wav(noise_name_20s, 20)
+    generate_noise_wav(noise_name_512w, 6)
+
+    spectrogram5 = spectrogram_generator.generate_spectrogram(noise_name_5s)
+    spectrogram10 = spectrogram_generator.generate_spectrogram(noise_name_10s)
+    spectrogram20 = spectrogram_generator.generate_spectrogram(noise_name_20s)
+    spectrogram512w = spectrogram_generator.generate_spectrogram(noise_name_512w)
+
+    print(spectrogram5.shape)
+    print(spectrogram10.shape)
+    print(spectrogram20.shape)
+    print(spectrogram512w.shape)
+
+    # Remove noise files
+    os.remove(noise_name_5s)
+    os.remove(noise_name_10s)
+    os.remove(noise_name_20s)
+    os.remove(noise_name_512w)
