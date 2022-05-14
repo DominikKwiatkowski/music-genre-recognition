@@ -17,8 +17,8 @@ from src.data_process.config_paths import DataPathsManager
 from src.training.training_config import TrainingConfig
 from src.data_process.spectrogram_augmenter import noise_overlay, mask_spectrogram
 import src.testing.testing_manager as tm
-from training.LrTweaker import LrTweaker
-from training.training_data_generator import get_datasets
+from src.training.LrTweaker import LrTweaker
+from src.training.training_data_generator import get_datasets
 
 label_encoder = preprocessing.LabelEncoder()
 
@@ -370,6 +370,7 @@ def run_training_new(
         overwrite_previous,
     )
     # TODO: dump training config to file and save it to the "./logs/{training_name}"
+
     training_config.model.compile(
         optimizer=training_config.optimizer,
         loss=training_config.loss,
@@ -390,22 +391,3 @@ def run_training_new(
 
     # Collect garbage to avoid memory leak
     gc.collect()
-
-
-def test_model(
-    training_config: TrainingConfig, test_metadata: pd.DataFrame, test_path: str
-) -> None:
-    # Load test data
-    test_data, test_label = load_data(training_config, test_metadata, test_path)
-    test_label = label_encoder.fit_transform(test_label)
-    test_input_data, test_input_label = prepare_data(
-        training_config, test_data, test_label
-    )
-
-    # Shuffle and run test data
-    test_input_data, test_input_label = shuffle(test_input_data, test_input_label)
-    test_loss, test_acc = training_config.model.evaluate(
-        test_input_data, test_input_label
-    )
-    # Print result
-    print(f"Test loss: {test_loss}, test accuracy: {test_acc}")

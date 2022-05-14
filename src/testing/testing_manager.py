@@ -29,7 +29,6 @@ def log_confusion_matrix(
     # Use the model to predict the values from the validation dataset.
     test_pred = training_config.model.predict(test_data)
     test_pred_class = np.argmax(test_pred, axis=1)
-    print(test_pred_class)
     con_mat = tf.math.confusion_matrix(
         labels=test_labels, predictions=test_pred_class
     ).numpy()

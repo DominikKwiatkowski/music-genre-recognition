@@ -19,7 +19,7 @@ if __name__ == "__main__":
         train, val, test = prepare_data(split_id, data_paths, processor, metadata)
 
         run_training(
-            f"sample-training-check-{split_id}",
+            f"sample-training-{split_id}",
             train,
             data_paths.get_train_dataset_path(split_id),
             val,
@@ -28,11 +28,11 @@ if __name__ == "__main__":
             data_paths.get_test_dataset_path(split_id),
             data_paths,
             augment=True,
-            overwrite_previous=True
+            overwrite_previous=True,
         )
 
         # run_training_new(
-        #     f"sample-training-changed-augment-{split_id}",
+        #     f"sample-training-new-{split_id}",
         #     train,
         #     data_paths.get_train_dataset_path(split_id),
         #     val,
