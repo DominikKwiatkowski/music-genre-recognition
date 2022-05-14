@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 from models.multi_scale_level_cnn import multi_scale_level_cnn
+from models.dumb import dumb_model
 
 
 class TrainingConfig:
@@ -8,8 +9,9 @@ class TrainingConfig:
         # Batch size for training
         self.batch_size: int = 8
 
+        self.starting_epoch: int = 0
         # Number of epochs to train for
-        self.epochs: int = 50
+        self.epochs: int = 100
 
         # Learning rate
         self.learning_rate: float = 0.01
@@ -30,10 +32,8 @@ class TrainingConfig:
         self.input_w = 512  # Corresponds to the track's length; 512 is around 6 seconds
         self.patch_size = 3276800 / self.input_w  # size which can be allocated on GPU
         # Mode layers definition
-        self.model = multi_scale_level_cnn(
+        self.model = dumb_model(
             (self.input_h, self.input_w, 1),
-            num_dense_blocks=3,
-            num_conv_filters=32,
             num_classes=8,
         )
 

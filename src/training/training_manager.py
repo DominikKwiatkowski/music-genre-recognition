@@ -9,10 +9,11 @@ import gc
 from typing import Tuple
 from sklearn import preprocessing
 from sklearn.utils import shuffle
-
+from tensorflow import keras
 from src.data_process.config_paths import DataPathsManager
 from src.training.training_config import TrainingConfig
 from src.data_process.spectrogram_augmenter import noise_overlay, mask_spectrogram
+import src.testing.testing_manager as tm
 
 label_encoder = preprocessing.LabelEncoder()
 
@@ -24,7 +25,7 @@ def augment_data(spectrogram: np.ndarray) -> list:
     :return: Augmented data
     """
     result = [
-        mask_spectrogram(spectrogram, n_freq_masks=1, n_time_masks=1),
+        mask_spectrogram(spectrogram, n_freq_masks=1, n_time_masks=0),
         noise_overlay(spectrogram),
     ]
 
@@ -97,9 +98,12 @@ def run_training(
     training_path: str,
     validation_metadata: pd.DataFrame,
     validation_path: str,
+    test_metadata: pd.DataFrame,
+    test_path: str,
     data_paths: DataPathsManager,
     augment: bool,
     overwrite_previous: bool = False,
+    resume: bool = False,
 ) -> None:
     training_config = TrainingConfig()
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
@@ -130,8 +134,15 @@ def run_training(
     training_config.model.compile(
         optimizer=training_config.optimizer,
         loss=training_config.loss,
-        metrics=["accuracy"],
+        metrics=["accuracy", "mse", "mae"],
     )
+    # load model if resume
+    if resume:
+        training_config.model = keras.models.load_model(
+            data_paths.model_path
+            + training_name
+            + str(training_config.starting_epoch - 1)
+        )
 
     best_loss: float = np.inf
     not_improved_count: int = 0
@@ -149,7 +160,7 @@ def run_training(
     val_label = label_encoder.fit_transform(val_label)
 
     # Every epoch has own data
-    for epoch_id in range(training_config.epochs):
+    for epoch_id in range(training_config.starting_epoch, training_config.epochs):
         print(f"Epoch: {epoch_id}")
 
         # Get subarrays for training and validation
@@ -183,7 +194,8 @@ def run_training(
             epoch_story = training_config.model.fit(
                 input_data[i],
                 input_label[i],
-                epochs=1,
+                initial_epoch=epoch_id,
+                epochs=epoch_id + 1,
                 batch_size=training_config.batch_size,
                 validation_data=(val_input_data, val_input_label),
                 shuffle=True,
@@ -193,12 +205,19 @@ def run_training(
             # Clear gpu session
             gc.collect()
 
-            # Collect garbage to avoid memory leak
-            gc.collect()
-
         # Save models after each epoch
-        training_config.model.save(data_paths.model_path + training_name)
+        training_config.model.save(
+            data_paths.model_path + training_name + str(epoch_id)
+        )
 
+        tm.test_model_training(
+            training_name,
+            training_config,
+            data_paths,
+            test_metadata,
+            test_path,
+            epoch_id,
+        )
         # Update best loss
         best_loss = min(best_loss, epoch_story.history["loss"][0])
 
@@ -219,22 +238,3 @@ def run_training(
                 print(
                     f"Epoch: {epoch_id} Reducing lr from {old_lr} to {training_config.learning_rate}"
                 )
-
-
-def test_model(
-    training_config: TrainingConfig, test_metadata: pd.DataFrame, test_path: str
-) -> None:
-    # Load test data
-    test_data, test_label = load_data(training_config, test_metadata, test_path)
-    test_label = label_encoder.fit_transform(test_label)
-    test_input_data, test_input_label = prepare_data(
-        training_config, test_data, test_label
-    )
-
-    # Shuffle and run test data
-    test_input_data, test_input_label = shuffle(test_input_data, test_input_label)
-    test_loss, test_acc = training_config.model.evaluate(
-        test_input_data, test_input_label
-    )
-    # Print result
-    print(f"Test loss: {test_loss}, test accuracy: {test_acc}")

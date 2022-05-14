@@ -20,11 +20,13 @@ if __name__ == "__main__":
         p = multiprocessing.Process(
             target=run_training,
             args=(
-                f"sample-training-{split_id}",
+                f"sample-training-check-{split_id}",
                 train,
                 data_paths.get_train_dataset_path(split_id),
                 val,
                 data_paths.get_val_dataset_path(split_id),
+                test,
+                data_paths.get_test_dataset_path(split_id),
                 data_paths,
                 split_id != 1,
                 True,
