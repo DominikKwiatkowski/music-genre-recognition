@@ -69,5 +69,5 @@ if __name__ == "__main__":
     _metadata: pd.DataFrame = _processor.get_metadata()
 
     # Prepare data to disk for 3 different types of splits
-    for _split_id in range(1, 4):
+    for _split_id in range(2, 3):
         prepare_data(_split_id, _data_paths, _processor, _metadata)

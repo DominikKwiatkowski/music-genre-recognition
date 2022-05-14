@@ -1,6 +1,7 @@
 from tensorflow.keras import layers
 from tensorflow.keras import models
 
+
 def dumb_model(input_shape, num_classes):
     model = models.Sequential()
     model.add(layers.Input(input_shape))
