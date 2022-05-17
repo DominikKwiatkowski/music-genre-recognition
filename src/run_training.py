@@ -2,9 +2,8 @@ import gc
 
 from src.data_process.config_paths import DataPathsManager
 from src.data_process.metadata_processor import MetadataProcessor
-from training.training_config import TrainingConfig
+from src.training.training_config import TrainingSetup, TrainingParams
 from training.training_manager import run_training
-from training.training_manager import run_training_new
 
 from prepare_data import prepare_data
 import multiprocessing

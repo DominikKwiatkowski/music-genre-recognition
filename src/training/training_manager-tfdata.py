@@ -6,17 +6,17 @@ import gc
 from sklearn import preprocessing
 
 from src.data_process.config_paths import DataPathsManager
-from src.training.training_config import TrainingConfig
+from src.training.training_config import TrainingSetup, TrainingParams
 from training.training_data_generator import get_datasets
 
 label_encoder = preprocessing.LabelEncoder()
 
 
 def prepare_output_dirs(
-        model_path: str,
-        training_log_path: str,
-        training_name: str,
-        overwrite_previous: bool
+    model_path: str,
+    training_log_path: str,
+    training_name: str,
+    overwrite_previous: bool,
 ) -> None:
     """
     Prepare the output directories for the training.
@@ -49,16 +49,16 @@ def prepare_output_dirs(
 
 
 def run_training_new(
-        training_name: str,
-        training_metadata: pd.DataFrame,
-        training_path: str,
-        validation_metadata: pd.DataFrame,
-        validation_path: str,
-        test_metadata: pd.DataFrame,
-        test_path: str,
-        data_paths: DataPathsManager,
-        augment: bool,
-        overwrite_previous: bool = False,
+    training_name: str,
+    training_metadata: pd.DataFrame,
+    training_path: str,
+    validation_metadata: pd.DataFrame,
+    validation_path: str,
+    test_metadata: pd.DataFrame,
+    test_path: str,
+    data_paths: DataPathsManager,
+    augment: bool,
+    overwrite_previous: bool = False,
 ) -> None:
     """
     Run the training.
@@ -72,7 +72,7 @@ def run_training_new(
     :param overwrite_previous: Overwrite previous training
     :return:
     """
-    training_config = TrainingConfig()
+    training_config = TrainingSetup(TrainingParams())
 
     training_dataset, validation_dataset = get_datasets(
         training_config,
@@ -84,19 +84,23 @@ def run_training_new(
 
     # Setup callbacks
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir=f"{data_paths.training_log_path}{training_name}",
-        update_freq='epoch'
+        log_dir=f"{data_paths.training_log_path}{training_name}", update_freq="epoch"
     )
 
     # Learning rate tweaker which decreases the learning rate if loss is not decreasing
     lr_tweaker = tf.keras.callbacks.ReduceLROnPlateau(
-        monitor='loss',
-        factor=training_config.learning_rate_decrease_multiplier,
-        patience=training_config.learning_rate_patience,
-        min_lr=training_config.learning_rate_min,
+        monitor="loss",
+        factor=training_config.p.learning_rate_decrease_multiplier,
+        patience=training_config.p.learning_rate_patience,
+        min_lr=training_config.p.learning_rate_min,
     )
 
-    prepare_output_dirs(data_paths.model_path, data_paths.training_log_path, training_name, overwrite_previous)
+    prepare_output_dirs(
+        data_paths.training_model_path,
+        data_paths.training_log_path,
+        training_name,
+        overwrite_previous,
+    )
 
     # TODO: dump training config to file and save it to the "./logs/{training_name}"
 
@@ -108,8 +112,8 @@ def run_training_new(
 
     training_config.model.fit(
         training_dataset,
-        epochs=training_config.epochs,
-        batch_size=training_config.batch_size,
+        epochs=training_config.p.epochs,
+        batch_size=training_config.p.batch_size,
         validation_data=validation_dataset,
         shuffle=True,
         callbacks=[tensorboard_callback, lr_tweaker],
@@ -120,4 +124,3 @@ def run_training_new(
 
     # Collect garbage to avoid memory leak
     gc.collect()
-

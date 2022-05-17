@@ -1,6 +1,3 @@
-import os
-import shutil
-import math
 import pandas as pd
 import src.training.training_manager as tm
 import tensorflow as tf
@@ -9,18 +6,15 @@ import seaborn as sns
 import numpy as np
 import io
 import gc
-from typing import Tuple
 from sklearn import preprocessing, metrics
 from sklearn.utils import shuffle
-from tensorflow import keras
 from src.data_process.config_paths import DataPathsManager
-from src.training.training_config import TrainingConfig
+from src.training.training_config import TrainingSetup, TrainingParams
 from matplotlib import pyplot as plt
-from pylab import figure
 
 
 def log_confusion_matrix(
-    training_config: TrainingConfig,
+    training_config: TrainingSetup,
     test_data: np.ndarray,
     test_labels: np.ndarray,
     training_name: str,
@@ -68,7 +62,7 @@ def log_confusion_matrix(
 
 
 def log_metrics(
-    training_config: TrainingConfig,
+    training_config: TrainingSetup,
     test_data: np.ndarray,
     test_labels: np.ndarray,
     training_name: str,
@@ -96,18 +90,15 @@ def log_metrics(
 
 def test_model_training(
     training_name: str,
-    training_config: TrainingConfig,
+    training_config: TrainingSetup,
     data_paths: DataPathsManager,
     test_metadata: pd.DataFrame,
     test_path: str,
     step: int,
 ) -> None:
-    # training_config = TrainingConfig()
-
-    # training_config.model = keras.models.load_model(data_paths.model_path + model_name)
     # Load test data
     test_data, test_label = tm.load_data(training_config, test_metadata, test_path)
-    test_label = tm.label_encoder.fit_transform(test_label)
+    test_label = training_config.label_encoder.fit_transform(test_label)
     test_input_data, test_input_label = tm.prepare_data(
         training_config, test_data, test_label
     )
@@ -121,7 +112,7 @@ def test_model_training(
         training_name,
         data_paths,
         step,
-        tm.label_encoder,
+        training_config.label_encoder,
     )
 
 
@@ -133,16 +124,14 @@ def test_model(
     test_path: str,
     step: int,
 ) -> None:
-    training_config = TrainingConfig()
-    encoder = preprocessing.LabelEncoder()
-    training_config.model.load_weights(
-        data_paths.model_path + model_name + model_id + ".h5"
-    )
-    encoder.classes_ = np.load(data_paths.model_path + model_name + "label_encoder.npy")
+    training_config = TrainingSetup()
+    training_config.load(model_name, model_id, data_paths.training_model_path)
+
     training_config.model.summary()
+
     # Load test data
     test_data, test_label = tm.load_data(training_config, test_metadata, test_path)
-    test_label = tm.label_encoder.fit_transform(test_label)
+    test_label = training_config.label_encoder.fit_transform(test_label)
     test_input_data, test_input_label = tm.prepare_data(
         training_config, test_data, test_label
     )
@@ -156,8 +145,9 @@ def test_model(
         "test_mode " + model_name,
         data_paths,
         step,
-        encoder,
+        training_config.label_encoder,
     )
+
     log_metrics(
         training_config,
         test_input_data,

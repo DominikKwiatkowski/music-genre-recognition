@@ -174,8 +174,8 @@ def get_genres_distances(metadata: pd.DataFrame, data_path: str) -> Dict[str, Di
 
                 # Check if shape is higher than genre_avg, if so, cut
                 spectrogram = spectrogram[
-                              : spectrogram_shape[0], : spectrogram_shape[1]
-                              ]
+                    : spectrogram_shape[0], : spectrogram_shape[1]
+                ]
                 genre_avg += spectrogram / len(genre_metadata)
             except RuntimeError:
                 print("Error in track: " + str(metadata_sorted.iloc[track]["track_id"]))
