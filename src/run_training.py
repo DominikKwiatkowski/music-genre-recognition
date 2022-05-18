@@ -18,7 +18,7 @@ if __name__ == "__main__":
         train, val, test = prepare_data(split_id, data_paths, processor, metadata)
 
         run_training(
-            f"sample-training-{split_id}",
+            f"resnet-{split_id}",
             train,
             data_paths.get_train_dataset_path(split_id),
             val,

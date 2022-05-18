@@ -57,7 +57,7 @@ class TrainingParams:
 
         # Number of epochs to train for
         self.starting_epoch: int = 0
-        self.epochs: int = 100
+        self.epochs: int = 2
 
         # Learning rate
         self.learning_rate: float = 0.01
@@ -84,7 +84,7 @@ class TrainingParams:
         self.initializer_name: str = "RandomNormal"
 
         # Model name
-        self.model_name: str = "dumb_model"
+        self.model_name: str = "resnet"
 
 
 class TrainingSetup:
@@ -126,6 +126,16 @@ class TrainingSetup:
                 (self.p.input_h, self.p.input_w, 1),
                 num_classes=self.p.num_classes,
                 initializer=self.initializer,
+            )
+        elif self.p.model_name == "resnet":
+            self.model = tf.keras.applications.resnet50.ResNet50(
+                # include_top=True,
+                # weights='imagenet',
+                weights=None,
+                input_tensor=None,
+                input_shape=(self.p.input_h, self.p.input_w, 1),
+                # pooling=None,
+                classes=self.p.num_classes,
             )
         else:
             raise ValueError("Model name not recognized")
