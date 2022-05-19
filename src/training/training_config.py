@@ -53,11 +53,11 @@ class TrainingParams:
         self.num_classes: int = 8
 
         # Batch size for training
-        self.batch_size: int = 8
+        self.batch_size: int = 16
 
         # Number of epochs to train for
         self.starting_epoch: int = 0
-        self.epochs: int = 2
+        self.epochs: int = 100
 
         # Learning rate
         self.learning_rate: float = 0.01
@@ -70,7 +70,7 @@ class TrainingParams:
         self.early_stopping_min_delta: float = 0.01
 
         # Input shape
-        self.input_h = 128  # Always 128
+        self.input_h = 192  # Always 128
         self.input_w = 512  # Corresponds to the track's length; 512 is around 6 seconds
         self.patch_size = 3276800 / self.input_w  # size which can be allocated on GPU
 
@@ -84,7 +84,7 @@ class TrainingParams:
         self.initializer_name: str = "RandomNormal"
 
         # Model name
-        self.model_name: str = "resnet"
+        self.model_name: str = "dumb_model"
 
 
 class TrainingSetup:

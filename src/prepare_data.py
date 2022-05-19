@@ -58,6 +58,7 @@ def prepare_data(
                 metadata=dataset_metadata,
                 save_path=path,
                 normalize=normalize,
+                spectro_height=192,  # Default is 128
             )
 
     return train, val, test

@@ -7,6 +7,8 @@ import pandas as pd
 import torch
 from alive_progress import alive_bar
 
+import src.data_process.spectrogram_debug as sdbg
+
 default_sample_rate = 44100
 
 track_ext = ".wav"
@@ -70,7 +72,7 @@ def get_signal_by_index(
     return get_signal(file_path)
 
 
-def generate_spectrogram(file_path: str) -> np.ndarray:
+def generate_spectrogram(file_path: str, spectro_height: int = 128) -> np.ndarray:
     """
     Creates a spectrogram for the given file.
     param file_path: Path to the file
@@ -97,7 +99,7 @@ def generate_spectrogram(file_path: str) -> np.ndarray:
     sgram = librosa.stft(signal)
     sgram_mag = np.abs(sgram)
     mel_scale_sgram = librosa.feature.melspectrogram(
-        S=sgram_mag, sr=sample_rate, power=1
+        S=sgram_mag, sr=sample_rate, power=1, n_mels=spectro_height
     )
     mel_sgram = librosa.amplitude_to_db(mel_scale_sgram, ref=np.min)
 
@@ -146,7 +148,11 @@ def generate_spectrogram_by_index(
 
 
 def generate_all_spectrograms(
-    dataset_path: str, metadata: pd.DataFrame, save_path: str, normalize: bool
+    dataset_path: str,
+    metadata: pd.DataFrame,
+    save_path: str,
+    normalize: bool,
+    spectro_height: int = 128,
 ) -> None:
     """
     Create spectrograms for all files in the dataset and save them to disk
@@ -154,6 +160,7 @@ def generate_all_spectrograms(
     :param metadata: metadata of the dataset
     :param save_path: path to save spectrograms
     :param normalize: whether to normalize spectrograms
+    :param spectro_height: height of the spectrogram
     """
 
     # Create save path
@@ -167,7 +174,7 @@ def generate_all_spectrograms(
         for index in range(len(metadata)):
             try:
                 file_path = index_to_file_path(dataset_path, metadata, index)
-                spectrogram = generate_spectrogram(file_path)
+                spectrogram = generate_spectrogram(file_path, spectro_height)
                 if normalize:
                     spectrogram = normalize_spectrogram(spectrogram)
 

@@ -4,12 +4,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from src.data_process import spectrogram_augmenter
-from src.data_process.spectrogram_generator import default_sample_rate
+
+# from src.data_process.spectrogram_generator import default_sample_rate
 
 
-def plot_spectrogram(
-    spectrogram: np.ndarray, sample_rate: int = default_sample_rate
-) -> None:
+def plot_spectrogram(spectrogram: np.ndarray, sample_rate: int = 44100) -> None:
     """
     Plot spectrogram.
     :param spectrogram: Spectrogram

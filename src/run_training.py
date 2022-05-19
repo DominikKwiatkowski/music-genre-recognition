@@ -18,7 +18,7 @@ if __name__ == "__main__":
         train, val, test = prepare_data(split_id, data_paths, processor, metadata)
 
         run_training(
-            f"resnet-{split_id}",
+            f"dumb-spectro192-{split_id}",
             train,
             data_paths.get_train_dataset_path(split_id),
             val,
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             test,
             data_paths.get_test_dataset_path(split_id),
             data_paths,
-            augment=True,
+            augment=False,
             overwrite_previous=True,
         )
 
